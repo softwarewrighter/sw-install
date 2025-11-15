@@ -91,6 +91,24 @@ Get detailed step-by-step output:
 sw-install -p ~/projects/my-tool --verbose
 ```
 
+### Version Information
+
+Display version, build information, copyright, and repository details:
+
+```bash
+sw-install --version
+# or
+sw-install -V
+```
+
+This shows:
+- Version number
+- Copyright and license information
+- Repository URL
+- Build host
+- Git commit SHA
+- ISO 8601 build timestamp
+
 ### Testing Mode
 
 For development and testing, override the destination directory:

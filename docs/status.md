@@ -4,7 +4,7 @@
 
 **Last Updated**: 2025-11-14
 **Version**: 0.1.0
-**Status**: Feature Complete - Ready for Release
+**Status**: Enhanced Version Information Added
 
 ### Overview
 Binary installer for softwarewrighter CLI projects. Enables easy installation of Rust binaries to ~/.local/softwarewrighter/bin.
@@ -59,8 +59,8 @@ Binary installer for softwarewrighter CLI projects. Enables easy installation of
 
 ### Test Results
 ```
-Tests: 33
-Passing: 33
+Tests: 41
+Passing: 41
 Failing: 0
 Coverage: High (all core functionality tested)
 ```
@@ -85,6 +85,7 @@ All pre-commit checks: ✓ Passing
 - ✅ Extended help for AI agents
 - ✅ Comprehensive error messages with hints
 - ✅ Automatic permission setting (Unix)
+- ✅ Enhanced version information with build metadata
 
 ### Known Issues
 None
@@ -96,10 +97,12 @@ None
 - 2025-11-14: Initial documentation created
 - 2025-11-14: Project structure defined
 - 2025-11-14: Core modules implemented (error, output, config, validator, installer, uninstaller)
-- 2025-11-14: All 33 tests passing
+- 2025-11-14: All 41 tests passing (updated from 33)
 - 2025-11-14: Zero clippy warnings achieved
 - 2025-11-14: Comprehensive README.md completed
 - 2025-11-14: Pre-commit validation script created
+- 2025-11-14: Added enhanced version information (-V/--version) with build metadata
+- 2025-11-14: Created build.rs to capture build host, commit SHA, and timestamp
 
 ### Dependencies
 ```toml
@@ -131,7 +134,7 @@ serial_test = "3.0"
 - [x] CLI interface
 
 #### Milestone 4: Testing ✅ COMPLETE
-- [x] Unit tests (33 passing)
+- [x] Unit tests (41 passing)
 - [x] Edge cases covered
 
 #### Milestone 5: Release ✅ COMPLETE
@@ -142,7 +145,7 @@ serial_test = "3.0"
 ### Progress Summary
 - **Overall**: 100% complete
 - **Code**: 100% complete (all planned features)
-- **Tests**: 100% complete (33/33 passing)
+- **Tests**: 100% complete (41/41 passing)
 - **Documentation**: 100% complete
 
 ### Next Steps for Future Versions

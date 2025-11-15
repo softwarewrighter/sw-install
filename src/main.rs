@@ -8,6 +8,24 @@ use sw_install::{
     create_output_handler, InstallConfig, InstallError, Installer, Setup, Uninstaller, Validator,
 };
 
+const REPOSITORY: &str = "https://github.com/softwarewrighter/sw-install";
+const LICENSE: &str = "MIT";
+const COPYRIGHT: &str = "Copyright (c) 2025 Michael A Wright";
+
+fn print_version() {
+    println!(
+        "{} {}\n{}\nLicense: {}\nRepository: {}\n\nBuild Information:\n  Host: {}\n  Commit: {}\n  Timestamp: {}",
+        env!("CARGO_PKG_NAME"),
+        env!("CARGO_PKG_VERSION"),
+        COPYRIGHT,
+        LICENSE,
+        REPOSITORY,
+        env!("BUILD_HOST"),
+        env!("GIT_HASH"),
+        env!("BUILD_TIMESTAMP")
+    );
+}
+
 const EXTENDED_HELP: &str = "\
 sw-install: Binary Installer for softwarewrighter CLI Projects
 
@@ -97,8 +115,7 @@ SECURITY:
 #[derive(Parser, Debug)]
 #[command(name = "sw-install")]
 #[command(about = "Install softwarewrighter binaries to local PATH", long_about = EXTENDED_HELP)]
-#[command(version)]
-#[command(author = "Copyright (c) 2025 Michael A Wright")]
+#[command(disable_version_flag = true)]
 struct Args {
     /// Path to the Cargo project (for installation)
     #[arg(short, long, value_name = "PATH", conflicts_with = "uninstall")]
@@ -136,10 +153,19 @@ struct Args {
     /// Override destination directory for testing purposes
     #[arg(short = 't', long, value_name = "DIR")]
     test_dir: Option<PathBuf>,
+
+    /// Print version information
+    #[arg(short = 'V', long)]
+    version: bool,
 }
 
 fn main() {
     let args = Args::parse();
+
+    if args.version {
+        print_version();
+        return;
+    }
 
     let result = if args.setup_install_dir {
         run_setup(args.verbose, args.dry_run, args.test_dir)

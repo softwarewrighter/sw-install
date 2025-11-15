@@ -6,11 +6,14 @@
 
 ```
 sw-install/
+├── build.rs              # Build-time metadata capture (host, commit, timestamp)
 ├── src/
-│   ├── main.rs           # Entry point, CLI parsing
+│   ├── main.rs           # Entry point, CLI parsing, version info
 │   ├── config.rs         # Configuration and path logic
 │   ├── validator.rs      # Project and binary validation
 │   ├── installer.rs      # Installation operations
+│   ├── uninstaller.rs    # Uninstallation operations
+│   ├── setup.rs          # First-time setup and PATH configuration
 │   ├── output.rs         # Output handling (verbose, dry-run)
 │   ├── error.rs          # Error types
 │   └── lib.rs            # Library exports for testing
@@ -425,4 +428,87 @@ $ sw-install -p ../ask -v
 
 Successfully installed: ask
 Location: /Users/mike/.local/softwarewrighter/bin/ask
+```
+
+### Build System
+
+#### build.rs
+
+The build script captures build-time metadata that is embedded into the binary:
+
+```rust
+use std::process::Command;
+
+fn main() {
+    // Capture hostname (build host)
+    let hostname = Command::new("hostname")
+        .output()
+        .ok()
+        .and_then(|output| String::from_utf8(output.stdout).ok())
+        .map(|s| s.trim().to_string())
+        .unwrap_or_else(|| "unknown".to_string());
+    println!("cargo:rustc-env=BUILD_HOST={}", hostname);
+
+    // Capture git commit SHA
+    let git_hash = Command::new("git")
+        .args(["rev-parse", "--short", "HEAD"])
+        .output()
+        .ok()
+        .and_then(|output| String::from_utf8(output.stdout).ok())
+        .map(|s| s.trim().to_string())
+        .unwrap_or_else(|| "unknown".to_string());
+    println!("cargo:rustc-env=GIT_HASH={}", git_hash);
+
+    // Capture build timestamp in ISO 8601 format
+    let timestamp = Command::new("date")
+        .args(["+%Y-%m-%dT%H:%M:%S%z"])
+        .output()
+        .ok()
+        .and_then(|output| String::from_utf8(output.stdout).ok())
+        .map(|s| s.trim().to_string())
+        .unwrap_or_else(|| "unknown".to_string());
+    println!("cargo:rustc-env=BUILD_TIMESTAMP={}", timestamp);
+
+    // Rebuild if git HEAD changes
+    println!("cargo:rerun-if-changed=.git/HEAD");
+}
+```
+
+#### Version Information
+
+The `-V/--version` flag displays enhanced version information:
+
+```
+$ sw-install --version
+sw-install 0.1.0
+Copyright (c) 2025 Michael A Wright
+License: MIT
+Repository: https://github.com/softwarewrighter/sw-install
+
+Build Information:
+  Host: manager
+  Commit: 6688d2c
+  Timestamp: 2025-11-14T18:11:38-0800
+```
+
+This is implemented in `main.rs`:
+
+```rust
+const REPOSITORY: &str = "https://github.com/softwarewrighter/sw-install";
+const LICENSE: &str = "MIT";
+const COPYRIGHT: &str = "Copyright (c) 2025 Michael A Wright";
+
+fn print_version() {
+    println!(
+        "{} {}\n{}\nLicense: {}\nRepository: {}\n\nBuild Information:\n  Host: {}\n  Commit: {}\n  Timestamp: {}",
+        env!("CARGO_PKG_NAME"),
+        env!("CARGO_PKG_VERSION"),
+        COPYRIGHT,
+        LICENSE,
+        REPOSITORY,
+        env!("BUILD_HOST"),
+        env!("GIT_HASH"),
+        env!("BUILD_TIMESTAMP")
+    );
+}
 ```
