@@ -41,7 +41,7 @@ pub enum InstallError {
     #[error("Home directory not found")]
     HomeNotFound,
 
-    #[error("Either --project or --uninstall must be specified")]
+    #[error("No operation specified. Use --project, --uninstall, --list, or --setup-install-dir")]
     NoOperationSpecified,
 }
 
