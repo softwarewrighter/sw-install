@@ -11,6 +11,7 @@ A command-line tool for installing softwarewrighter Rust binaries to your local 
 - **Setup Installation Directory**: One-time setup to create install directory and configure PATH
 - Install release or debug builds
 - Rename binaries during installation to avoid conflicts
+- **List installed binaries**: View all binaries currently installed
 - Uninstall installed binaries
 - Dry-run mode to preview actions
 - Verbose output for detailed step-by-step information
@@ -69,6 +70,20 @@ Install with a different name:
 sw-install -p ~/projects/ask --rename ask-dev
 ```
 
+### List Installed Binaries
+
+View all currently installed binaries:
+
+```bash
+sw-install --list
+```
+
+Or with verbose output:
+
+```bash
+sw-install --list --verbose
+```
+
 ### Uninstall a Binary
 
 ```bash
@@ -125,6 +140,7 @@ Options:
   -r, --rename <NAME>           Rename the binary during installation
       --type <TYPE>             Build type to install (release or debug) [default: release]
   -u, --uninstall <NAME>        Uninstall the named binary
+  -l, --list                    List all installed binaries
   -s, --setup-install-dir       Setup installation directory and configure PATH
   -v, --verbose                 Show verbose output
   -n, --dry-run                 Print actions without executing them
@@ -193,7 +209,15 @@ sw-install --help
    my-tool-dev test-command
    ```
 
-### Uninstallation
+### Managing Installed Binaries
+
+List all installed binaries:
+
+```bash
+sw-install --list
+```
+
+Uninstall a binary:
 
 ```bash
 sw-install -u my-tool

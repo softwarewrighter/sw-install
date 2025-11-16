@@ -5,7 +5,8 @@ use clap::Parser;
 use std::path::PathBuf;
 use std::process;
 use sw_install::{
-    create_output_handler, InstallConfig, InstallError, Installer, Setup, Uninstaller, Validator,
+    create_output_handler, InstallConfig, InstallError, Installer, Lister, Setup, Uninstaller,
+    Validator,
 };
 
 const REPOSITORY: &str = "https://github.com/softwarewrighter/sw-install";
@@ -41,7 +42,10 @@ USAGE MODES:
   2. Install a binary:
      sw-install -p <project-path> [OPTIONS]
 
-  3. Uninstall a binary:
+  3. List installed binaries:
+     sw-install --list
+
+  4. Uninstall a binary:
      sw-install -u <binary-name> [OPTIONS]
 
 EXAMPLES:
@@ -61,6 +65,9 @@ EXAMPLES:
 
   Preview installation (dry-run):
     sw-install -p ~/projects/ask -n -v
+
+  List installed binaries:
+    sw-install --list
 
   Uninstall a binary:
     sw-install -u ask
@@ -89,15 +96,44 @@ WORKFLOW:
   5. Copies binary to ~/.local/softwarewrighter/bin/
   6. Sets executable permissions
 
-AI AGENT GUIDANCE:
+AI CODING AGENT INSTRUCTIONS:
   This tool is designed for automated binary installation in development
   workflows. Key features for automation:
-  - Use --dry-run (-n) to preview actions before execution
-  - Use --verbose (-v) to see detailed step-by-step output
-  - Check exit codes: 0 = success, non-zero = error
-  - Combine flags: -nvp for verbose dry-run installation
-  - All file paths are validated before operations
-  - Errors include actionable suggestions
+
+  1. INSTALLATION WORKFLOW:
+     - Run: sw-install -p /path/to/project
+     - For debug builds: sw-install -p /path/to/project --type debug
+     - For renamed binaries: sw-install -p /path/to/project -r new-name
+     - Preview first: sw-install -p /path/to/project --dry-run -v
+
+  2. LISTING BINARIES:
+     - Run: sw-install --list
+     - Returns sorted list of all installed binaries
+     - Use --verbose for detailed output
+
+  3. UNINSTALLATION WORKFLOW:
+     - Run: sw-install -u binary-name
+     - Preview first: sw-install -u binary-name --dry-run -v
+     - Exit code 0 = success, non-zero = error
+
+  4. FIRST-TIME SETUP:
+     - Run: sw-install --setup-install-dir
+     - Creates installation directory
+     - Configures PATH in shell config
+     - User must reload shell after setup
+
+  5. ERROR HANDLING:
+     - Exit code 0 = success
+     - Non-zero exit code = error occurred
+     - All errors include actionable suggestions
+     - Check stderr for error messages
+
+  6. BEST PRACTICES:
+     - Use --dry-run (-n) to preview actions before execution
+     - Use --verbose (-v) to see detailed step-by-step output
+     - Combine flags: -nvp for verbose dry-run installation
+     - All file paths are validated before operations
+     - Safe to run in automated environments
 
 ERROR HANDLING:
   - Missing project: 'Project path does not exist'
@@ -138,8 +174,12 @@ struct Args {
     #[arg(short, long, value_name = "NAME", conflicts_with = "project")]
     uninstall: Option<String>,
 
+    /// List all installed binaries
+    #[arg(short = 'l', long, conflicts_with_all = ["project", "uninstall"])]
+    list: bool,
+
     /// Setup installation directory and configure PATH
-    #[arg(short = 's', long, conflicts_with_all = ["project", "uninstall"])]
+    #[arg(short = 's', long, conflicts_with_all = ["project", "uninstall", "list"])]
     setup_install_dir: bool,
 
     /// Show verbose output
@@ -169,6 +209,8 @@ fn main() {
 
     let result = if args.setup_install_dir {
         run_setup(args.verbose, args.dry_run, args.test_dir)
+    } else if args.list {
+        run_list(args.verbose, args.test_dir)
     } else if let Some(binary_name) = args.uninstall {
         run_uninstall(binary_name, args.verbose, args.dry_run, args.test_dir)
     } else if let Some(project_path) = args.project {
@@ -229,6 +271,14 @@ fn run_install(
     // Installation phase
     let installer = Installer::new(&config, validation_result.binary_name, output.as_ref());
     installer.install()?;
+
+    Ok(())
+}
+
+fn run_list(verbose: bool, test_dir: Option<PathBuf>) -> Result<(), InstallError> {
+    let output = create_output_handler(verbose, false);
+    let lister = Lister::new(test_dir, output.as_ref());
+    lister.list()?;
 
     Ok(())
 }
