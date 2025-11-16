@@ -87,4 +87,25 @@ mod tests {
         let error: InstallError = io_error.into();
         assert!(error.to_string().contains("IO error"));
     }
+
+    #[test]
+    fn test_error_no_operation_specified_mentions_all_operations() {
+        let error = InstallError::NoOperationSpecified;
+        let message = error.to_string();
+
+        // Verify the error message mentions all available operations
+        assert!(
+            message.contains("--project"),
+            "Error should mention --project"
+        );
+        assert!(
+            message.contains("--uninstall"),
+            "Error should mention --uninstall"
+        );
+        assert!(message.contains("--list"), "Error should mention --list");
+        assert!(
+            message.contains("--setup-install-dir"),
+            "Error should mention --setup-install-dir"
+        );
+    }
 }

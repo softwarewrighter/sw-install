@@ -120,8 +120,50 @@ fn test_list_shows_output_without_verbose() {
 }
 ```
 
+## Error Message Completeness
+
+### Missing Operation in Error Message (2025-11-16)
+
+**Issue**: After adding the `--list` feature, running `sw-install` with no arguments showed:
+```
+Error: Either --project or --uninstall must be specified
+```
+
+This error message was outdated and didn't mention the new `--list` option or the existing `--setup-install-dir` option.
+
+**Root Cause**: When adding new features, we updated:
+- CLI arguments (added `--list` flag)
+- Help text (added examples and documentation)
+- Implementation (added `run_list()` function)
+
+But we **forgot to update** the error message for `NoOperationSpecified`.
+
+**Fix**: Updated error message to include all operations:
+```rust
+#[error("No operation specified. Use --project, --uninstall, --list, or --setup-install-dir")]
+NoOperationSpecified,
+```
+
+**Lessons Learned**:
+1. **Checklist for Adding Features**: When adding a new CLI operation:
+   - [ ] Add argument definition
+   - [ ] Implement functionality
+   - [ ] Update help text (`--help` and examples)
+   - [ ] Update error messages that reference operations
+   - [ ] Update README.md
+   - [ ] Add tests for the feature
+   - [ ] Test error messages
+
+2. **Error Messages Are Documentation**: Error messages guide users to correct usage and must stay synchronized with available features
+
+3. **Test Error Paths**: Don't just test happy paths; verify error messages are helpful and accurate
+
+**Test Added**:
+Added test to verify the error message includes all operations when no arguments provided.
+
 ## Future Considerations
 
 - Consider adding integration tests for end-to-end CLI workflows
 - Could add JSON output format for programmatic consumption
 - Might want to show installation metadata (date, version, source)
+- Add systematic checks for error message completeness in tests
