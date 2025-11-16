@@ -46,13 +46,12 @@ impl<'a> Lister<'a> {
 
         binaries.sort();
 
+        // Always show list output (not just in verbose mode)
         if binaries.is_empty() {
-            self.output.info("No binaries installed");
+            println!("No binaries installed");
         } else {
-            self.output
-                .info(&format!("Found {} installed binaries:", binaries.len()));
             for binary in &binaries {
-                self.output.info(&format!("  - {}", binary));
+                println!("{}", binary);
             }
         }
 
