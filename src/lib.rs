@@ -13,7 +13,7 @@ pub mod validator;
 pub use config::InstallConfig;
 pub use error::{InstallError, Result};
 pub use installer::Installer;
-pub use lister::Lister;
+pub use lister::{Lister, SortOrder};
 pub use output::{create_output_handler, OutputHandler};
 pub use setup::Setup;
 pub use uninstaller::Uninstaller;

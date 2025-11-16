@@ -5,8 +5,8 @@ use clap::Parser;
 use std::path::PathBuf;
 use std::process;
 use sw_install::{
-    create_output_handler, InstallConfig, InstallError, Installer, Lister, Setup, Uninstaller,
-    Validator,
+    create_output_handler, InstallConfig, InstallError, Installer, Lister, Setup, SortOrder,
+    Uninstaller, Validator,
 };
 
 const REPOSITORY: &str = "https://github.com/softwarewrighter/sw-install";
@@ -69,6 +69,11 @@ EXAMPLES:
   List installed binaries:
     sw-install --list
 
+  List with sorting options:
+    sw-install --list --sort name     # Sort alphabetically (default)
+    sw-install --list --sort newest   # Show newest first
+    sw-install --list --sort oldest   # Show oldest first
+
   Uninstall a binary:
     sw-install -u ask
 
@@ -108,8 +113,10 @@ AI CODING AGENT INSTRUCTIONS:
 
   2. LISTING BINARIES:
      - Run: sw-install --list
-     - Returns sorted list of all installed binaries
+     - Returns sorted list of all installed binaries with timestamps
      - Use --verbose for detailed output
+     - Sort options: --sort name (default), --sort newest, --sort oldest
+     - Each binary shows time since last modification
 
   3. UNINSTALLATION WORKFLOW:
      - Run: sw-install -u binary-name
@@ -178,8 +185,18 @@ struct Args {
     #[arg(short = 'l', long, conflicts_with_all = ["project", "uninstall"])]
     list: bool,
 
+    /// Sort order for list: name, oldest, newest
+    #[arg(
+        short = 's',
+        long,
+        value_name = "ORDER",
+        default_value = "name",
+        requires = "list"
+    )]
+    sort: String,
+
     /// Setup installation directory and configure PATH
-    #[arg(short = 's', long, conflicts_with_all = ["project", "uninstall", "list"])]
+    #[arg(long, conflicts_with_all = ["project", "uninstall", "list"])]
     setup_install_dir: bool,
 
     /// Show verbose output
@@ -210,7 +227,7 @@ fn main() {
     let result = if args.setup_install_dir {
         run_setup(args.verbose, args.dry_run, args.test_dir)
     } else if args.list {
-        run_list(args.verbose, args.test_dir)
+        run_list(args.verbose, &args.sort, args.test_dir)
     } else if let Some(binary_name) = args.uninstall {
         run_uninstall(binary_name, args.verbose, args.dry_run, args.test_dir)
     } else if let Some(project_path) = args.project {
@@ -275,9 +292,22 @@ fn run_install(
     Ok(())
 }
 
-fn run_list(verbose: bool, test_dir: Option<PathBuf>) -> Result<(), InstallError> {
+fn run_list(
+    verbose: bool,
+    sort_order_str: &str,
+    test_dir: Option<PathBuf>,
+) -> Result<(), InstallError> {
     let output = create_output_handler(verbose, false);
-    let lister = Lister::new(test_dir, output.as_ref());
+
+    let sort_order = match sort_order_str.parse::<SortOrder>() {
+        Ok(order) => order,
+        Err(e) => {
+            eprintln!("Error: {}", e);
+            process::exit(1);
+        }
+    };
+
+    let lister = Lister::new(test_dir, sort_order, output.as_ref());
     lister.list()?;
 
     Ok(())

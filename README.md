@@ -11,7 +11,9 @@ A command-line tool for installing softwarewrighter Rust binaries to your local 
 - **Setup Installation Directory**: One-time setup to create install directory and configure PATH
 - Install release or debug builds
 - Rename binaries during installation to avoid conflicts
-- **List installed binaries**: View all binaries currently installed
+- **List installed binaries**: View all binaries with timestamps and sorting options
+  - Shows time since last modification (e.g., "2 hours ago", "3 days ago")
+  - Sort by name, newest first, or oldest first
 - Uninstall installed binaries
 - Dry-run mode to preview actions
 - Verbose output for detailed step-by-step information
@@ -72,10 +74,30 @@ sw-install -p ~/projects/ask --rename ask-dev
 
 ### List Installed Binaries
 
-View all currently installed binaries:
+View all currently installed binaries with timestamps:
 
 ```bash
 sw-install --list
+```
+
+Each binary shows when it was last modified (e.g., "2 hours ago", "3 days ago").
+
+Sort by name (default):
+
+```bash
+sw-install --list --sort name
+```
+
+Sort by newest first:
+
+```bash
+sw-install --list --sort newest
+```
+
+Sort by oldest first:
+
+```bash
+sw-install --list --sort oldest
 ```
 
 Or with verbose output:
@@ -141,7 +163,8 @@ Options:
       --type <TYPE>             Build type to install (release or debug) [default: release]
   -u, --uninstall <NAME>        Uninstall the named binary
   -l, --list                    List all installed binaries
-  -s, --setup-install-dir       Setup installation directory and configure PATH
+  -s, --sort <ORDER>            Sort order for list: name, oldest, newest [default: name]
+      --setup-install-dir       Setup installation directory and configure PATH
   -v, --verbose                 Show verbose output
   -n, --dry-run                 Print actions without executing them
   -t, --test-dir <DIR>          Override destination directory for testing
