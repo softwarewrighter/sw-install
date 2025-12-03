@@ -5,21 +5,69 @@ The Validator module (`validator.rs`) performs pre-flight checks before installa
 ## Responsibilities
 
 - Verify project path exists and is a directory
-- Verify Cargo.toml exists in the project
+- Detect project structure type (simple, workspace, multi-component)
 - Parse Cargo.toml to extract binary name
 - Verify compiled binary exists in target directory
-- Return validation results for use by installer
+- Return validation results including source binary path for use by installer
+
+## Project Types
+
+The validator supports three distinct project structures:
+
+### Simple Project
+Single Cargo.toml with `[package]` section:
+```
+my-project/
+  Cargo.toml      # [package] name = "my-app"
+  src/main.rs
+  target/release/my-app
+```
+
+### Workspace Project
+Cargo.toml with `[workspace]` section containing member crates:
+```
+my-workspace/
+  Cargo.toml      # [workspace] members = ["crates/*"]
+  crates/
+    my-cli/
+      Cargo.toml  # [package] with [[bin]] or src/main.rs
+      src/main.rs
+  target/release/my-cli
+```
+
+### Multi-Component Project
+No root Cargo.toml, with workspace Cargo.toml files in `components/`:
+```
+my-repo/
+  components/
+    cli-component/
+      Cargo.toml    # [workspace] members = ["crates/cli"]
+      crates/
+        cli/
+          Cargo.toml
+          src/main.rs
+      target/release/my-cli
+    lib-component/
+      Cargo.toml    # Another workspace (library only)
+```
 
 ## Data Structure
 
 ```rust
 pub struct Validator<'a> {
     config: &'a InstallConfig,
-    output: Box<dyn OutputHandler>,
+    output: &'a dyn OutputHandler,
 }
 
 pub struct ValidationResult {
     pub binary_name: String,
+    pub source_binary_path: PathBuf,
+}
+
+enum ProjectType {
+    Simple,
+    Workspace,
+    MultiComponent { component_path: PathBuf },
 }
 ```
 
@@ -40,11 +88,11 @@ impl<'a> Validator<'a> {
 ```rust
 pub fn validate(&self) -> Result<ValidationResult> {
     self.validate_project_path()?;
-    self.validate_cargo_toml()?;
-    let binary_name = self.extract_binary_name()?;
-    self.validate_source_binary(&binary_name)?;
+    let project_type = self.detect_project_type()?;
+    let binary_name = self.extract_binary_name_for_type(&project_type)?;
+    let source_binary_path = self.validate_source_binary_for_type(&binary_name, &project_type)?;
 
-    Ok(ValidationResult { binary_name })
+    Ok(ValidationResult { binary_name, source_binary_path })
 }
 ```
 
@@ -80,28 +128,36 @@ fn validate_project_path(&self) -> Result<()> {
 
 **Error:** `InstallError::ProjectNotFound(PathBuf)`
 
-### 2. Validate Cargo.toml
+### 2. Detect Project Type
 
-Ensures Cargo.toml exists:
+Identifies the project structure:
 
 ```rust
-fn validate_cargo_toml(&self) -> Result<()> {
-    self.output.step("Checking Cargo.toml");
+fn detect_project_type(&self) -> Result<ProjectType> {
+    let cargo_toml_path = self.config.project_path.join("Cargo.toml");
 
-    let cargo_toml = self.config.project_path.join("Cargo.toml");
-
-    if !cargo_toml.exists() {
-        return Err(InstallError::CargoTomlNotFound(
-            self.config.project_path.clone()
-        ));
+    if cargo_toml_path.exists() {
+        // Parse and check for [workspace] or [package]
+        if has_workspace_section { return Ok(ProjectType::Workspace); }
+        if has_package_section { return Ok(ProjectType::Simple); }
     }
 
-    Ok(())
+    // Check for components/ directory with workspace Cargo.toml files
+    let components_dir = self.config.project_path.join("components");
+    if components_dir.is_dir() {
+        if let Some(component_path) = self.find_component_with_binary(&components_dir) {
+            return Ok(ProjectType::MultiComponent { component_path });
+        }
+    }
+
+    Err(InstallError::CargoTomlNotFound(self.config.project_path.clone()))
 }
 ```
 
-**Checks:**
-- Cargo.toml file exists in project directory
+**Detection Order:**
+1. Check for root Cargo.toml with `[workspace]` -> Workspace
+2. Check for root Cargo.toml with `[package]` -> Simple
+3. Check for `components/` directory with binary crates -> MultiComponent
 
 **Error:** `InstallError::CargoTomlNotFound(PathBuf)`
 
@@ -176,35 +232,41 @@ fn validate_source_binary(&self, binary_name: &str) -> Result<()> {
                  v
 ┌─────────────────────────────────────────┐
 │   Step 1: validate_project_path()       │
-│   ✓ Path exists?                        │
-│   ✓ Is directory?                       │
+│   - Path exists?                        │
+│   - Is directory?                       │
 └────────────────┬────────────────────────┘
                  │
                  v
 ┌─────────────────────────────────────────┐
-│   Step 2: validate_cargo_toml()         │
-│   ✓ Cargo.toml exists?                  │
+│   Step 2: detect_project_type()         │
+│   - Check root Cargo.toml               │
+│   - [workspace] -> Workspace            │
+│   - [package] -> Simple                 │
+│   - No root -> check components/        │
+│   -> Returns: ProjectType               │
 └────────────────┬────────────────────────┘
                  │
                  v
 ┌─────────────────────────────────────────┐
-│   Step 3: extract_binary_name()         │
-│   • Read Cargo.toml                     │
-│   • Parse TOML                          │
-│   • Extract [package].name              │
-│   → Returns: "binary-name"              │
+│   Step 3: extract_binary_name_for_type()│
+│   - Simple: [package].name              │
+│   - Workspace: scan members for binaries│
+│   - MultiComponent: scan component      │
+│   -> Returns: "binary-name"             │
 └────────────────┬────────────────────────┘
                  │
                  v
 ┌─────────────────────────────────────────┐
-│   Step 4: validate_source_binary()      │
-│   ✓ Binary exists in target/[type]/?    │
+│Step 4: validate_source_binary_for_type()│
+│   - Simple/Workspace: project/target/   │
+│   - MultiComponent: component/target/   │
+│   -> Returns: PathBuf to binary         │
 └────────────────┬────────────────────────┘
                  │
                  v
 ┌─────────────────────────────────────────┐
 │   Return: ValidationResult              │
-│   { binary_name: "binary-name" }        │
+│   { binary_name, source_binary_path }   │
 └─────────────────────────────────────────┘
 ```
 
@@ -237,17 +299,17 @@ edition = "2021"
 ## Integration with Other Components
 
 ```
-CLI → Config → Validator → Installer
-                  ↓
+CLI -> Config -> Validator -> Installer
+                    |
              ValidationResult
-             { binary_name }
+             { binary_name, source_binary_path }
 ```
 
 **Usage:**
 ```rust
 let validator = Validator::new(&config, output);
 let result = validator.validate()?;
-let installer = Installer::new(&config, result.binary_name, output);
+let installer = Installer::new(&config, result.binary_name, result.source_binary_path, output);
 ```
 
 ## Error Messages
