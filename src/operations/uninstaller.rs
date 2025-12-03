@@ -65,10 +65,11 @@ impl<'a> Uninstaller<'a> {
 
     fn validate_binary_exists(&self, binary_path: &Path) -> Result<()> {
         // Check if the installation directory itself exists
-        if let Some(parent) = binary_path.parent() {
-            if !parent.exists() && self.test_dir.is_none() {
-                return Err(InstallError::InstallDirNotFound(parent.to_path_buf()));
-            }
+        if let Some(parent) = binary_path.parent()
+            && !parent.exists()
+            && self.test_dir.is_none()
+        {
+            return Err(InstallError::InstallDirNotFound(parent.to_path_buf()));
         }
 
         if !binary_path.exists() {

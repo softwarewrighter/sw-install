@@ -148,7 +148,8 @@ mod tests {
     #[serial]
     fn test_setup_creates_directory() {
         let temp_home = TempDir::new().unwrap();
-        std::env::set_var("HOME", temp_home.path());
+        // SAFETY: This test runs serially and no other threads access HOME
+        unsafe { std::env::set_var("HOME", temp_home.path()) };
 
         let output = NormalOutput;
         let setup = Setup::new(false, None, &output);
@@ -158,9 +159,11 @@ mod tests {
 
         let install_dir = result.unwrap();
         assert!(install_dir.exists());
-        assert!(install_dir
-            .to_string_lossy()
-            .ends_with(".local/softwarewrighter/bin"));
+        assert!(
+            install_dir
+                .to_string_lossy()
+                .ends_with(".local/softwarewrighter/bin")
+        );
     }
 
     #[test]
@@ -195,7 +198,8 @@ mod tests {
     #[serial]
     fn test_detect_shell_config_finds_zshrc() {
         let temp_home = TempDir::new().unwrap();
-        std::env::set_var("HOME", temp_home.path());
+        // SAFETY: This test runs serially and no other threads access HOME
+        unsafe { std::env::set_var("HOME", temp_home.path()) };
 
         let zshrc = temp_home.path().join(".zshrc");
         fs::write(&zshrc, "# test config").unwrap();
@@ -212,7 +216,8 @@ mod tests {
     #[serial]
     fn test_detect_shell_config_defaults_to_bashrc() {
         let temp_home = TempDir::new().unwrap();
-        std::env::set_var("HOME", temp_home.path());
+        // SAFETY: This test runs serially and no other threads access HOME
+        unsafe { std::env::set_var("HOME", temp_home.path()) };
 
         let output = NormalOutput;
         let setup = Setup::new(false, None, &output);

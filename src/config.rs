@@ -63,11 +63,7 @@ impl InstallConfig {
 
     /// Get the target subdirectory (debug or release)
     pub fn target_subdir(&self) -> &str {
-        if self.use_debug {
-            "debug"
-        } else {
-            "release"
-        }
+        if self.use_debug { "debug" } else { "release" }
     }
 }
 
@@ -99,9 +95,10 @@ mod tests {
         let config = InstallConfig::new(PathBuf::from("/test"), None, false, false, false, None);
 
         let dest = config.destination_dir().unwrap();
-        assert!(dest
-            .to_string_lossy()
-            .ends_with(".local/softwarewrighter/bin"));
+        assert!(
+            dest.to_string_lossy()
+                .ends_with(".local/softwarewrighter/bin")
+        );
     }
 
     #[test]
@@ -161,9 +158,10 @@ mod tests {
         );
 
         let dest = config.destination_binary_path("myapp").unwrap();
-        assert!(dest
-            .to_string_lossy()
-            .ends_with("softwarewrighter/bin/myapp"));
+        assert!(
+            dest.to_string_lossy()
+                .ends_with("softwarewrighter/bin/myapp")
+        );
     }
 
     #[test]
@@ -178,9 +176,10 @@ mod tests {
         );
 
         let dest = config.destination_binary_path("myapp").unwrap();
-        assert!(dest
-            .to_string_lossy()
-            .ends_with("softwarewrighter/bin/myapp-dev"));
+        assert!(
+            dest.to_string_lossy()
+                .ends_with("softwarewrighter/bin/myapp-dev")
+        );
     }
 
     #[test]

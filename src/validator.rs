@@ -93,27 +93,26 @@ impl<'a> Validator<'a> {
         let cargo_toml_path = self.config.project_path.join("Cargo.toml");
 
         // Check if root Cargo.toml exists
-        if cargo_toml_path.exists() {
-            if let Ok(contents) = fs::read_to_string(&cargo_toml_path) {
-                if let Ok(value) = toml::from_str::<toml::Value>(&contents) {
-                    // Check if it's a workspace
-                    if value.get("workspace").is_some() {
-                        return Ok(ProjectType::Workspace);
-                    }
-                    // It has a [package] section - simple project
-                    if value.get("package").is_some() {
-                        return Ok(ProjectType::Simple);
-                    }
-                }
+        if cargo_toml_path.exists()
+            && let Ok(contents) = fs::read_to_string(&cargo_toml_path)
+            && let Ok(value) = toml::from_str::<toml::Value>(&contents)
+        {
+            // Check if it's a workspace
+            if value.get("workspace").is_some() {
+                return Ok(ProjectType::Workspace);
+            }
+            // It has a [package] section - simple project
+            if value.get("package").is_some() {
+                return Ok(ProjectType::Simple);
             }
         }
 
         // No root Cargo.toml - check for components/ directory
         let components_dir = self.config.project_path.join("components");
-        if components_dir.is_dir() {
-            if let Some(component_path) = self.find_component_with_binary(&components_dir) {
-                return Ok(ProjectType::MultiComponent { component_path });
-            }
+        if components_dir.is_dir()
+            && let Some(component_path) = self.find_component_with_binary(&components_dir)
+        {
+            return Ok(ProjectType::MultiComponent { component_path });
         }
 
         // No valid project structure found
@@ -131,19 +130,16 @@ impl<'a> Validator<'a> {
                     let cargo_toml = component_path.join("Cargo.toml");
                     if cargo_toml.exists() {
                         // Check if this workspace contains binaries
-                        if let Ok(contents) = fs::read_to_string(&cargo_toml) {
-                            if let Ok(value) = toml::from_str::<toml::Value>(&contents) {
-                                if let Some(workspace) = value.get("workspace") {
-                                    if let Some(members) =
-                                        workspace.get("members").and_then(|m| m.as_array())
-                                    {
-                                        let binaries = self
-                                            .find_workspace_binaries_at(&component_path, members);
-                                        if !binaries.is_empty() {
-                                            return Some(component_path);
-                                        }
-                                    }
-                                }
+                        if let Ok(contents) = fs::read_to_string(&cargo_toml)
+                            && let Ok(value) = toml::from_str::<toml::Value>(&contents)
+                            && let Some(workspace) = value.get("workspace")
+                            && let Some(members) =
+                                workspace.get("members").and_then(|m| m.as_array())
+                        {
+                            let binaries =
+                                self.find_workspace_binaries_at(&component_path, members);
+                            if !binaries.is_empty() {
+                                return Some(component_path);
                             }
                         }
                     }
@@ -172,19 +168,18 @@ impl<'a> Validator<'a> {
             toml::from_str(&contents).map_err(|e| InstallError::CargoTomlParse(e.to_string()))?;
 
         // First check for [[bin]] sections
-        if let Some(bins) = value.get("bin").and_then(|b| b.as_array()) {
-            if let Some(first_bin) = bins.first() {
-                if let Some(name) = first_bin.get("name").and_then(|n| n.as_str()) {
-                    return Ok(name.to_string());
-                }
-            }
+        if let Some(bins) = value.get("bin").and_then(|b| b.as_array())
+            && let Some(first_bin) = bins.first()
+            && let Some(name) = first_bin.get("name").and_then(|n| n.as_str())
+        {
+            return Ok(name.to_string());
         }
 
         // Fall back to package name
-        if let Some(package) = value.get("package") {
-            if let Some(name) = package.get("name").and_then(|n| n.as_str()) {
-                return Ok(name.to_string());
-            }
+        if let Some(package) = value.get("package")
+            && let Some(name) = package.get("name").and_then(|n| n.as_str())
+        {
+            return Ok(name.to_string());
         }
 
         Err(InstallError::BinaryNameNotFound)
@@ -198,18 +193,18 @@ impl<'a> Validator<'a> {
         let value: toml::Value =
             toml::from_str(&contents).map_err(|e| InstallError::CargoTomlParse(e.to_string()))?;
 
-        if let Some(workspace) = value.get("workspace") {
-            if let Some(members) = workspace.get("members").and_then(|m| m.as_array()) {
-                let binary_names = self.find_workspace_binaries_at(workspace_root, members);
-                if binary_names.len() == 1 {
-                    return Ok(binary_names.into_iter().next().unwrap());
-                } else if binary_names.len() > 1 {
-                    self.output.info(&format!(
-                        "Multiple binaries found in workspace: {}",
-                        binary_names.join(", ")
-                    ));
-                    return Ok(binary_names.into_iter().next().unwrap());
-                }
+        if let Some(workspace) = value.get("workspace")
+            && let Some(members) = workspace.get("members").and_then(|m| m.as_array())
+        {
+            let binary_names = self.find_workspace_binaries_at(workspace_root, members);
+            if binary_names.len() == 1 {
+                return Ok(binary_names.into_iter().next().unwrap());
+            } else if binary_names.len() > 1 {
+                self.output.info(&format!(
+                    "Multiple binaries found in workspace: {}",
+                    binary_names.join(", ")
+                ));
+                return Ok(binary_names.into_iter().next().unwrap());
             }
         }
 
@@ -231,29 +226,25 @@ impl<'a> Validator<'a> {
 
                 for path in member_paths {
                     let member_cargo_toml = workspace_root.join(&path).join("Cargo.toml");
-                    if member_cargo_toml.exists() {
-                        if let Ok(contents) = fs::read_to_string(&member_cargo_toml) {
-                            if let Ok(value) = toml::from_str::<toml::Value>(&contents) {
-                                // Check for [[bin]] sections
-                                if let Some(bins) = value.get("bin").and_then(|b| b.as_array()) {
-                                    for bin in bins {
-                                        if let Some(name) = bin.get("name").and_then(|n| n.as_str())
-                                        {
-                                            binary_names.push(name.to_string());
-                                        }
-                                    }
+                    if member_cargo_toml.exists()
+                        && let Ok(contents) = fs::read_to_string(&member_cargo_toml)
+                        && let Ok(value) = toml::from_str::<toml::Value>(&contents)
+                    {
+                        // Check for [[bin]] sections
+                        if let Some(bins) = value.get("bin").and_then(|b| b.as_array()) {
+                            for bin in bins {
+                                if let Some(name) = bin.get("name").and_then(|n| n.as_str()) {
+                                    binary_names.push(name.to_string());
                                 }
-                                // Also check if package has default binary (has src/main.rs)
-                                else if let Some(package) = value.get("package") {
-                                    if let Some(name) = package.get("name").and_then(|n| n.as_str())
-                                    {
-                                        let main_rs =
-                                            workspace_root.join(&path).join("src").join("main.rs");
-                                        if main_rs.exists() {
-                                            binary_names.push(name.to_string());
-                                        }
-                                    }
-                                }
+                            }
+                        }
+                        // Also check if package has default binary (has src/main.rs)
+                        else if let Some(package) = value.get("package")
+                            && let Some(name) = package.get("name").and_then(|n| n.as_str())
+                        {
+                            let main_rs = workspace_root.join(&path).join("src").join("main.rs");
+                            if main_rs.exists() {
+                                binary_names.push(name.to_string());
                             }
                         }
                     }
@@ -330,6 +321,53 @@ edition = "2021"
         }
 
         Ok(())
+    }
+
+    fn create_workspace_cargo_toml(dir: &Path, members: &str) -> std::io::Result<()> {
+        fs::write(
+            dir.join("Cargo.toml"),
+            format!(
+                r#"[workspace]
+resolver = "2"
+members = {members}
+"#
+            ),
+        )
+    }
+
+    fn create_package_cargo_toml(dir: &Path, name: &str, bin: Option<&str>) -> std::io::Result<()> {
+        let bin_section = bin
+            .map(|n| {
+                format!(
+                    r#"
+[[bin]]
+name = "{n}"
+path = "src/main.rs"
+"#
+                )
+            })
+            .unwrap_or_default();
+        fs::write(
+            dir.join("Cargo.toml"),
+            format!(
+                r#"[package]
+name = "{name}"
+version = "0.1.0"
+{bin_section}"#
+            ),
+        )
+    }
+
+    fn create_lib_crate(dir: &Path, name: &str) -> std::io::Result<()> {
+        fs::create_dir_all(dir.join("src"))?;
+        create_package_cargo_toml(dir, name, None)?;
+        fs::write(dir.join("src").join("lib.rs"), "pub fn foo() {}")
+    }
+
+    fn create_bin_crate(dir: &Path, name: &str) -> std::io::Result<()> {
+        fs::create_dir_all(dir.join("src"))?;
+        create_package_cargo_toml(dir, name, Some(name))?;
+        fs::write(dir.join("src").join("main.rs"), "fn main() {}")
     }
 
     #[test]
@@ -577,46 +615,14 @@ version = "0.1.0"
     fn test_workspace_with_library_only_members_ignores_libs() {
         let temp_dir = TempDir::new().unwrap();
 
-        // Create workspace root Cargo.toml
-        let root_cargo = temp_dir.path().join("Cargo.toml");
-        fs::write(
-            root_cargo,
-            r#"[workspace]
-resolver = "2"
-members = ["crates/my-lib", "crates/my-cli"]
-"#,
-        )
-        .unwrap();
+        create_workspace_cargo_toml(temp_dir.path(), r#"["crates/my-lib", "crates/my-cli"]"#)
+            .unwrap();
 
-        // Create library crate (no main.rs, no [[bin]])
         let lib_dir = temp_dir.path().join("crates").join("my-lib");
-        fs::create_dir_all(lib_dir.join("src")).unwrap();
-        fs::write(
-            lib_dir.join("Cargo.toml"),
-            r#"[package]
-name = "my-lib"
-version = "0.1.0"
-"#,
-        )
-        .unwrap();
-        fs::write(lib_dir.join("src").join("lib.rs"), "pub fn foo() {}").unwrap();
+        create_lib_crate(&lib_dir, "my-lib").unwrap();
 
-        // Create binary crate
         let cli_dir = temp_dir.path().join("crates").join("my-cli");
-        fs::create_dir_all(cli_dir.join("src")).unwrap();
-        fs::write(
-            cli_dir.join("Cargo.toml"),
-            r#"[package]
-name = "my-cli"
-version = "0.1.0"
-
-[[bin]]
-name = "my-cli"
-path = "src/main.rs"
-"#,
-        )
-        .unwrap();
-        fs::write(cli_dir.join("src").join("main.rs"), "fn main() {}").unwrap();
+        create_bin_crate(&cli_dir, "my-cli").unwrap();
 
         let config = InstallConfig::new(
             temp_dir.path().to_path_buf(),
@@ -639,34 +645,14 @@ path = "src/main.rs"
     fn test_multi_component_project_detection() {
         let temp_dir = TempDir::new().unwrap();
 
-        // Create components/my-cli/Cargo.toml with workspace
+        // Create component workspace
         let cli_component = temp_dir.path().join("components").join("my-cli");
         fs::create_dir_all(&cli_component).unwrap();
-        fs::write(
-            cli_component.join("Cargo.toml"),
-            r#"[workspace]
-resolver = "2"
-members = ["crates/cli"]
-"#,
-        )
-        .unwrap();
+        create_workspace_cargo_toml(&cli_component, r#"["crates/cli"]"#).unwrap();
 
         // Create the binary crate inside the component
         let crate_dir = cli_component.join("crates").join("cli");
-        fs::create_dir_all(crate_dir.join("src")).unwrap();
-        fs::write(
-            crate_dir.join("Cargo.toml"),
-            r#"[package]
-name = "my-app"
-version = "0.1.0"
-
-[[bin]]
-name = "my-app"
-path = "src/main.rs"
-"#,
-        )
-        .unwrap();
-        fs::write(crate_dir.join("src").join("main.rs"), "fn main() {}").unwrap();
+        create_bin_crate(&crate_dir, "my-app").unwrap();
 
         // Create target directory with fake binary
         let target_dir = cli_component.join("target").join("release");

@@ -5,8 +5,8 @@ use clap::Parser;
 use std::path::PathBuf;
 use std::process;
 use sw_install::{
-    create_output_handler, InstallConfig, InstallError, Installer, Lister, Setup, SortOrder,
-    Uninstaller, Validator,
+    InstallConfig, InstallError, Installer, Lister, Setup, SortOrder, Uninstaller, Validator,
+    create_output_handler,
 };
 
 const REPOSITORY: &str = "https://github.com/softwarewrighter/sw-install";

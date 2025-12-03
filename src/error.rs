@@ -29,7 +29,9 @@ pub enum InstallError {
     #[error("Binary not installed: {0}")]
     BinaryNotInstalled(String),
 
-    #[error("Installation directory does not exist: {0}\nHint: Run 'sw-install --setup-install-dir' to create it and configure PATH")]
+    #[error(
+        "Installation directory does not exist: {0}\nHint: Run 'sw-install --setup-install-dir' to create it and configure PATH"
+    )]
     InstallDirNotFound(PathBuf),
 
     #[error("IO error: {0}")]
