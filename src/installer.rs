@@ -13,6 +13,7 @@ use std::os::unix::fs::PermissionsExt;
 pub struct Installer<'a> {
     config: &'a InstallConfig,
     binary_name: String,
+    source_binary_path: PathBuf,
     output: &'a dyn OutputHandler,
 }
 
@@ -20,11 +21,13 @@ impl<'a> Installer<'a> {
     pub fn new(
         config: &'a InstallConfig,
         binary_name: String,
+        source_binary_path: PathBuf,
         output: &'a dyn OutputHandler,
     ) -> Self {
         Self {
             config,
             binary_name,
+            source_binary_path,
             output,
         }
     }
@@ -74,11 +77,10 @@ impl<'a> Installer<'a> {
     }
 
     fn copy_binary(&self, _dest_dir: &Path) -> Result<PathBuf> {
-        let source = self.config.source_binary_path(&self.binary_name);
         let dest = self.config.destination_binary_path(&self.binary_name)?;
 
         if !self.config.dry_run {
-            fs::copy(&source, &dest)?;
+            fs::copy(&self.source_binary_path, &dest)?;
         }
 
         Ok(dest)
@@ -127,7 +129,8 @@ mod tests {
             Some(test_bin_dir.clone()),
         );
         let output = NormalOutput;
-        let installer = Installer::new(&config, "testapp".to_string(), &output);
+        let source_path = target_dir.join("testapp");
+        let installer = Installer::new(&config, "testapp".to_string(), source_path, &output);
 
         let result = installer.install();
         assert!(result.is_ok());
@@ -145,7 +148,8 @@ mod tests {
         let target_dir = temp_project.path().join("target").join("release");
         fs::create_dir_all(&target_dir).unwrap();
         let source_content = b"fake binary content";
-        fs::write(target_dir.join("testapp"), source_content).unwrap();
+        let source_path = target_dir.join("testapp");
+        fs::write(&source_path, source_content).unwrap();
 
         let config = InstallConfig::new(
             temp_project.path().to_path_buf(),
@@ -156,7 +160,7 @@ mod tests {
             Some(test_bin_dir.clone()),
         );
         let output = NormalOutput;
-        let installer = Installer::new(&config, "testapp".to_string(), &output);
+        let installer = Installer::new(&config, "testapp".to_string(), source_path, &output);
 
         let dest_path = installer.install().unwrap();
         assert!(dest_path.exists());
@@ -175,7 +179,8 @@ mod tests {
         // Create source binary
         let target_dir = temp_project.path().join("target").join("release");
         fs::create_dir_all(&target_dir).unwrap();
-        fs::write(target_dir.join("testapp"), "fake binary").unwrap();
+        let source_path = target_dir.join("testapp");
+        fs::write(&source_path, "fake binary").unwrap();
 
         let config = InstallConfig::new(
             temp_project.path().to_path_buf(),
@@ -186,7 +191,7 @@ mod tests {
             Some(test_bin_dir.clone()),
         );
         let output = NormalOutput;
-        let installer = Installer::new(&config, "testapp".to_string(), &output);
+        let installer = Installer::new(&config, "testapp".to_string(), source_path, &output);
 
         let dest_path = installer.install().unwrap();
         assert!(dest_path.to_string_lossy().ends_with("testapp-dev"));
@@ -203,7 +208,8 @@ mod tests {
         // Create source binary
         let target_dir = temp_project.path().join("target").join("release");
         fs::create_dir_all(&target_dir).unwrap();
-        fs::write(target_dir.join("testapp"), "fake binary").unwrap();
+        let source_path = target_dir.join("testapp");
+        fs::write(&source_path, "fake binary").unwrap();
 
         let config = InstallConfig::new(
             temp_project.path().to_path_buf(),
@@ -214,7 +220,7 @@ mod tests {
             Some(test_bin_dir.clone()),
         );
         let output = NormalOutput;
-        let installer = Installer::new(&config, "testapp".to_string(), &output);
+        let installer = Installer::new(&config, "testapp".to_string(), source_path, &output);
 
         let result = installer.install();
         assert!(result.is_ok());
@@ -236,7 +242,8 @@ mod tests {
         // Create source binary
         let target_dir = temp_project.path().join("target").join("release");
         fs::create_dir_all(&target_dir).unwrap();
-        fs::write(target_dir.join("testapp"), "fake binary").unwrap();
+        let source_path = target_dir.join("testapp");
+        fs::write(&source_path, "fake binary").unwrap();
 
         let config = InstallConfig::new(
             temp_project.path().to_path_buf(),
@@ -247,7 +254,7 @@ mod tests {
             Some(test_bin_dir.clone()),
         );
         let output = NormalOutput;
-        let installer = Installer::new(&config, "testapp".to_string(), &output);
+        let installer = Installer::new(&config, "testapp".to_string(), source_path, &output);
 
         let dest_path = installer.install().unwrap();
         let metadata = fs::metadata(&dest_path).unwrap();

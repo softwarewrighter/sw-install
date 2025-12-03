@@ -85,6 +85,27 @@ PREREQUISITES:
   - Project must have a Cargo.toml file
   - Binary must be compiled (run 'cargo build --release' or 'cargo build')
 
+WORKSPACE SUPPORT:
+  sw-install automatically detects three project structures:
+
+  1. Simple project: Single Cargo.toml with [package]
+  2. Workspace project: Cargo.toml with [workspace] and members
+  3. Multi-component project: No root Cargo.toml, components/<name>/Cargo.toml
+
+  For workspaces with multiple binary crates, it will list all found binaries
+  and install the first one (use --rename to specify a different name).
+
+  Example multi-component structure (no root Cargo.toml):
+    my-project/
+    ├── components/
+    │   ├── my-cli/           # Component with workspace
+    │   │   ├── Cargo.toml    # [workspace] with members
+    │   │   ├── crates/
+    │   │   │   └── cli/      # Binary crate
+    │   │   └── target/       # Component-specific target
+    │   └── my-lib/           # Another component (library only)
+    └── docs/                 # No root Cargo.toml needed
+
 WORKFLOW:
 
   Setup (first time):
@@ -286,7 +307,12 @@ fn run_install(
     let validation_result = validator.validate()?;
 
     // Installation phase
-    let installer = Installer::new(&config, validation_result.binary_name, output.as_ref());
+    let installer = Installer::new(
+        &config,
+        validation_result.binary_name,
+        validation_result.source_binary_path,
+        output.as_ref(),
+    );
     installer.install()?;
 
     Ok(())
