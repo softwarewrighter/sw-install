@@ -70,17 +70,12 @@ impl<'a> Lister<'a> {
         if !bin_dir.exists() {
             return Err(InstallError::InstallDirNotFound(bin_dir));
         }
-
         let mut binaries = self.collect_binaries(&bin_dir)?;
-
-        // Sort binaries
         match self.sort_order {
             SortOrder::Name => binaries.sort_by(|a, b| a.name.cmp(&b.name)),
             SortOrder::Oldest => binaries.sort_by(|a, b| a.modified_time.cmp(&b.modified_time)),
             SortOrder::Newest => binaries.sort_by(|a, b| b.modified_time.cmp(&a.modified_time)),
         }
-
-        // Print binaries
         if binaries.is_empty() {
             println!("No binaries installed");
         } else {
@@ -93,7 +88,6 @@ impl<'a> Lister<'a> {
                 );
             }
         }
-
         Ok(binaries.into_iter().map(|b| b.name).collect())
     }
 
@@ -130,45 +124,31 @@ impl<'a> Lister<'a> {
 
 /// Format time difference as human-readable "time ago" string
 pub fn format_time_ago(now: SystemTime, then: SystemTime) -> String {
-    let duration = now
-        .duration_since(then)
-        .unwrap_or_else(|_| std::time::Duration::from_secs(0));
-
-    let seconds = duration.as_secs();
-
-    if seconds < 60 {
-        return format!("{} seconds ago", seconds);
+    let secs = now.duration_since(then).map(|d| d.as_secs()).unwrap_or(0);
+    let plural = |n: u64| if n == 1 { "" } else { "s" };
+    if secs < 60 {
+        return format!("{} seconds ago", secs);
     }
-
-    let minutes = seconds / 60;
-    if minutes < 60 {
-        return format!(
-            "{} minute{} ago",
-            minutes,
-            if minutes == 1 { "" } else { "s" }
-        );
+    let mins = secs / 60;
+    if mins < 60 {
+        return format!("{} minute{} ago", mins, plural(mins));
     }
-
-    let hours = minutes / 60;
+    let hours = mins / 60;
     if hours < 24 {
-        return format!("{} hour{} ago", hours, if hours == 1 { "" } else { "s" });
+        return format!("{} hour{} ago", hours, plural(hours));
     }
-
     let days = hours / 24;
     if days < 7 {
-        return format!("{} day{} ago", days, if days == 1 { "" } else { "s" });
+        return format!("{} day{} ago", days, plural(days));
     }
-
     let weeks = days / 7;
     if weeks < 4 {
-        return format!("{} week{} ago", weeks, if weeks == 1 { "" } else { "s" });
+        return format!("{} week{} ago", weeks, plural(weeks));
     }
-
     let months = days / 30;
     if months < 12 {
-        return format!("{} month{} ago", months, if months == 1 { "" } else { "s" });
+        return format!("{} month{} ago", months, plural(months));
     }
-
     let years = days / 365;
-    format!("{} year{} ago", years, if years == 1 { "" } else { "s" })
+    format!("{} year{} ago", years, plural(years))
 }

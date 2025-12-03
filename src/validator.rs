@@ -49,16 +49,14 @@ impl<'a> Validator<'a> {
                 self.config.project_path.clone(),
             ));
         }
-
         self.output.step("[2/4] Detecting project structure...");
         let project_type = self.detect_project_type()?;
-        let type_desc = match &project_type {
+        let type_name = match &project_type {
             ProjectType::Simple => "simple package",
             ProjectType::Workspace => "workspace",
             ProjectType::MultiComponent { .. } => "multi-component",
         };
-        self.output.info(&format!("Project type: {}", type_desc));
-
+        self.output.info(&format!("Project type: {}", type_name));
         self.output.step("[3/4] Extracting binary name...");
         let cargo_toml_path = match &project_type {
             ProjectType::Simple | ProjectType::Workspace => {
@@ -68,13 +66,10 @@ impl<'a> Validator<'a> {
         };
         let binary_name = self.extract_binary_name(&cargo_toml_path)?;
         self.output.info(&format!("Binary name: {}", binary_name));
-
         self.output.step("[4/4] Verifying source binary exists...");
         let source_binary_path =
             self.validate_source_binary_for_type(&binary_name, &project_type)?;
-
         self.output.success("Validation complete");
-
         Ok(ValidationResult {
             binary_name,
             source_binary_path,
@@ -94,13 +89,10 @@ impl<'a> Validator<'a> {
                 return Ok(ProjectType::Simple);
             }
         }
-
-        // Check for multi-component structure (components/<name>/Cargo.toml)
         let components_dir = self.config.project_path.join("components");
         if let Ok(entries) = fs::read_dir(&components_dir) {
             for component_path in entries.filter_map(|e| e.ok()).map(|e| e.path()) {
-                let cargo_toml = component_path.join("Cargo.toml");
-                if let Ok(contents) = fs::read_to_string(&cargo_toml)
+                if let Ok(contents) = fs::read_to_string(component_path.join("Cargo.toml"))
                     && let Ok(value) = toml::from_str::<toml::Value>(&contents)
                     && let Some(workspace) = value.get("workspace")
                     && let Some(members) = workspace.get("members").and_then(|m| m.as_array())
@@ -112,7 +104,6 @@ impl<'a> Validator<'a> {
                 }
             }
         }
-
         Err(InstallError::CargoTomlNotFound(
             self.config.project_path.clone(),
         ))
@@ -123,13 +114,13 @@ impl<'a> Validator<'a> {
             .map_err(|e| InstallError::CargoTomlParse(e.to_string()))?;
         let value: toml::Value =
             toml::from_str(&contents).map_err(|e| InstallError::CargoTomlParse(e.to_string()))?;
-
-        // For workspaces, scan members for binaries
         if let Some(workspace) = value.get("workspace")
             && let Some(members) = workspace.get("members").and_then(|m| m.as_array())
         {
-            let workspace_root = cargo_toml_path.parent().unwrap_or(Path::new("."));
-            let binaries = self.find_workspace_binaries_at(workspace_root, members);
+            let binaries = self.find_workspace_binaries_at(
+                cargo_toml_path.parent().unwrap_or(Path::new(".")),
+                members,
+            );
             if !binaries.is_empty() {
                 if binaries.len() > 1 {
                     self.output
@@ -138,8 +129,6 @@ impl<'a> Validator<'a> {
                 return Ok(binaries.into_iter().next().unwrap());
             }
         }
-
-        // For simple packages, check [[bin]] or fall back to package name
         if let Some(bins) = value.get("bin").and_then(|b| b.as_array())
             && let Some(first_bin) = bins.first()
             && let Some(name) = first_bin.get("name").and_then(|n| n.as_str())
@@ -151,7 +140,6 @@ impl<'a> Validator<'a> {
         {
             return Ok(name.to_string());
         }
-
         Err(InstallError::BinaryNameNotFound)
     }
 
@@ -171,8 +159,7 @@ impl<'a> Validator<'a> {
                 vec![PathBuf::from(member)]
             };
             for path in paths {
-                let toml_path = root.join(&path).join("Cargo.toml");
-                if let Ok(contents) = fs::read_to_string(&toml_path)
+                if let Ok(contents) = fs::read_to_string(root.join(&path).join("Cargo.toml"))
                     && let Ok(value) = toml::from_str::<toml::Value>(&contents)
                 {
                     if let Some(bins) = value.get("bin").and_then(|b| b.as_array()) {
@@ -211,12 +198,9 @@ impl<'a> Validator<'a> {
                 component_path.clone(),
             ),
         };
-
         if !source_path.exists() {
             return Err(InstallError::BinaryNotFound(source_path));
         }
-
-        // Check if binary is older than source files
         let binary_time = fs::metadata(&source_path)
             .and_then(|m| m.modified())
             .unwrap_or(SystemTime::UNIX_EPOCH);
@@ -225,7 +209,6 @@ impl<'a> Validator<'a> {
         {
             return Err(InstallError::BinaryOutdated(source_path));
         }
-
         Ok(source_path)
     }
 }
@@ -233,28 +216,24 @@ impl<'a> Validator<'a> {
 /// Recursively find the newest .rs file modification time
 fn find_newest_source_file(dir: &Path) -> Option<SystemTime> {
     let mut newest: Option<SystemTime> = None;
-
-    if let Ok(entries) = fs::read_dir(dir) {
-        for entry in entries.filter_map(|e| e.ok()) {
-            let path = entry.path();
-
-            // Skip target directory
-            if path.file_name().is_some_and(|n| n == "target") {
-                continue;
+    let Ok(entries) = fs::read_dir(dir) else {
+        return None;
+    };
+    for entry in entries.filter_map(|e| e.ok()) {
+        let path = entry.path();
+        if path.file_name().is_some_and(|n| n == "target") {
+            continue;
+        }
+        if path.is_dir() {
+            if let Some(time) = find_newest_source_file(&path) {
+                newest = Some(newest.map_or(time, |n| n.max(time)));
             }
-
-            if path.is_dir() {
-                if let Some(time) = find_newest_source_file(&path) {
-                    newest = Some(newest.map_or(time, |n| n.max(time)));
-                }
-            } else if path.extension().is_some_and(|e| e == "rs")
-                && let Ok(metadata) = fs::metadata(&path)
-                && let Ok(modified) = metadata.modified()
-            {
-                newest = Some(newest.map_or(modified, |n| n.max(modified)));
-            }
+        } else if path.extension().is_some_and(|e| e == "rs")
+            && let Ok(metadata) = fs::metadata(&path)
+            && let Ok(modified) = metadata.modified()
+        {
+            newest = Some(newest.map_or(modified, |n| n.max(modified)));
         }
     }
-
     newest
 }

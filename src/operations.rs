@@ -52,7 +52,6 @@ impl<'a> Installer<'a> {
         }
         self.output
             .info(&format!("Destination: {}", dest_dir.display()));
-
         self.output.step("[2/3] Copying binary...");
         let dest_binary = self.config.destination_binary_path(&self.binary_name)?;
         if !self.config.dry_run {
@@ -60,17 +59,13 @@ impl<'a> Installer<'a> {
         }
         self.output
             .info(&format!("Copied to: {}", dest_binary.display()));
-
         self.output.step("[3/3] Setting executable permissions...");
+        #[cfg(unix)]
         if !self.config.dry_run {
-            #[cfg(unix)]
-            {
-                let mut perms = fs::metadata(&dest_binary)?.permissions();
-                perms.set_mode(0o755);
-                fs::set_permissions(&dest_binary, perms)?;
-            }
+            let mut perms = fs::metadata(&dest_binary)?.permissions();
+            perms.set_mode(0o755);
+            fs::set_permissions(&dest_binary, perms)?;
         }
-
         self.output.success(&format!(
             "Successfully installed: {} -> {}",
             self.binary_name,
@@ -108,19 +103,19 @@ impl<'a> Uninstaller<'a> {
 
     pub fn uninstall(&self) -> Result<()> {
         self.output.step("[1/2] Locating binary...");
-        let dest_dir = if let Some(ref test_dir) = self.test_dir {
-            test_dir.clone()
-        } else {
-            let home = std::env::var("HOME").map_err(|_| InstallError::HomeNotFound)?;
-            PathBuf::from(home)
-                .join(".local")
-                .join("softwarewrighter")
-                .join("bin")
+        let dest_dir = match &self.test_dir {
+            Some(dir) => dir.clone(),
+            None => {
+                let home = std::env::var("HOME").map_err(|_| InstallError::HomeNotFound)?;
+                PathBuf::from(home)
+                    .join(".local")
+                    .join("softwarewrighter")
+                    .join("bin")
+            }
         };
         let binary_path = dest_dir.join(&self.binary_name);
         self.output
             .info(&format!("Binary path: {}", binary_path.display()));
-
         self.output.step("[2/2] Validating binary exists...");
         if let Some(parent) = binary_path.parent()
             && !parent.exists()
@@ -131,12 +126,10 @@ impl<'a> Uninstaller<'a> {
         if !binary_path.exists() {
             return Err(InstallError::BinaryNotInstalled(self.binary_name.clone()));
         }
-
         self.output.step("Removing binary...");
         if !self.dry_run {
             fs::remove_file(&binary_path)?;
         }
-
         self.output
             .success(&format!("Successfully uninstalled: {}", self.binary_name));
         Ok(())

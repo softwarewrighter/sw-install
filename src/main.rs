@@ -239,12 +239,10 @@ struct Args {
 
 fn main() {
     let args = Args::parse();
-
     if args.version {
         print_version();
         return;
     }
-
     let result = if args.setup_install_dir {
         run_setup(args.verbose, args.dry_run, args.test_dir)
     } else if args.list {
@@ -252,23 +250,10 @@ fn main() {
     } else if let Some(binary_name) = args.uninstall {
         run_uninstall(binary_name, args.verbose, args.dry_run, args.test_dir)
     } else if let Some(project_path) = args.project {
-        // Validate build type
-        let use_debug = match args.r#type.to_lowercase().as_str() {
-            "debug" => true,
-            "release" => false,
-            _ => {
-                eprintln!(
-                    "Error: Invalid build type '{}'. Must be 'release' or 'debug'",
-                    args.r#type
-                );
-                process::exit(1);
-            }
-        };
-
         run_install(
             project_path,
             args.rename,
-            use_debug,
+            &args.r#type,
             args.verbose,
             args.dry_run,
             args.test_dir,
@@ -276,7 +261,6 @@ fn main() {
     } else {
         Err(InstallError::NoOperationSpecified)
     };
-
     if let Err(e) = result {
         eprintln!("Error: {}", e);
         process::exit(1);
@@ -293,24 +277,32 @@ fn run_setup(verbose: bool, dry_run: bool, test_dir: Option<PathBuf>) -> Result<
 fn run_install(
     project_path: PathBuf,
     rename: Option<String>,
-    use_debug: bool,
+    build_type: &str,
     verbose: bool,
     dry_run: bool,
     test_dir: Option<PathBuf>,
 ) -> Result<(), InstallError> {
+    let use_debug = match build_type.to_lowercase().as_str() {
+        "debug" => true,
+        "release" => false,
+        _ => {
+            eprintln!(
+                "Error: Invalid build type '{}'. Must be 'release' or 'debug'",
+                build_type
+            );
+            process::exit(1);
+        }
+    };
     let output = NormalOutput::new(verbose, dry_run);
     let config = InstallConfig::new(project_path, rename, use_debug, verbose, dry_run, test_dir);
-
-    let validator = Validator::new(&config, &output);
-    let validation_result = validator.validate()?;
-
-    let installer = Installer::new(
+    let validation_result = Validator::new(&config, &output).validate()?;
+    Installer::new(
         &config,
         validation_result.binary_name,
         validation_result.source_binary_path,
         &output,
-    );
-    installer.install()?;
+    )
+    .install()?;
     Ok(())
 }
 

@@ -92,46 +92,30 @@ impl<'a> Setup<'a> {
 
     pub fn configure_path(&self, shell_config: &Path, install_dir: &Path) -> Result<()> {
         if self.test_dir.is_some() {
-            // In test mode, don't actually modify shell config
             self.output.info("Test mode: skipping shell configuration");
             return Ok(());
         }
-
+        let path_line = format!("export PATH=\"{}:$PATH\"", install_dir.display());
         if self.dry_run {
             self.output.info(&format!(
-                "Would add to {}: export PATH=\"{}:$PATH\"",
+                "Would add to {}: {}",
                 shell_config.display(),
-                install_dir.display()
+                path_line
             ));
             return Ok(());
         }
-
-        // Read existing config
-        let content = if shell_config.exists() {
-            fs::read_to_string(shell_config)?
-        } else {
-            String::new()
-        };
-
-        // Check if already configured
-        let path_line = format!("export PATH=\"{}:$PATH\"", install_dir.display());
+        let content = fs::read_to_string(shell_config).unwrap_or_default();
         if content.contains(&path_line) {
             self.output.info("PATH already configured in shell config");
             return Ok(());
         }
-
-        // Append PATH configuration
-        let mut new_content = content;
-        if !new_content.is_empty() && !new_content.ends_with('\n') {
-            new_content.push('\n');
-        }
-        new_content.push('\n');
-        new_content.push_str("# Added by sw-install\n");
-        new_content.push_str(&path_line);
-        new_content.push('\n');
-
+        let sep = if content.is_empty() || content.ends_with('\n') {
+            ""
+        } else {
+            "\n"
+        };
+        let new_content = format!("{}{}\n# Added by sw-install\n{}\n", content, sep, path_line);
         fs::write(shell_config, new_content)?;
-
         Ok(())
     }
 }
