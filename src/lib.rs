@@ -3,12 +3,18 @@
 
 pub mod config;
 pub mod error;
-pub mod operations;
+pub mod installer;
+pub mod lister;
 pub mod output;
+pub mod setup;
+pub mod uninstaller;
 pub mod validator;
 
 pub use config::InstallConfig;
 pub use error::{InstallError, Result};
-pub use operations::{Installer, Lister, Setup, SortOrder, Uninstaller};
+pub use installer::Installer;
+pub use lister::{Lister, SortOrder};
 pub use output::{OutputHandler, create_output_handler};
+pub use setup::Setup;
+pub use uninstaller::Uninstaller;
 pub use validator::Validator;
