@@ -5,8 +5,8 @@ use clap::Parser;
 use std::path::PathBuf;
 use std::process;
 use sw_install::{
-    InstallConfig, InstallError, Installer, Lister, Setup, SortOrder, Uninstaller, Validator,
-    create_output_handler,
+    InstallConfig, InstallError, Installer, Lister, NormalOutput, Setup, SortOrder, Uninstaller,
+    Validator,
 };
 
 const REPOSITORY: &str = "https://github.com/softwarewrighter/sw-install";
@@ -284,10 +284,9 @@ fn main() {
 }
 
 fn run_setup(verbose: bool, dry_run: bool, test_dir: Option<PathBuf>) -> Result<(), InstallError> {
-    let output = create_output_handler(verbose, dry_run);
-    let setup = Setup::new(dry_run, test_dir, output.as_ref());
+    let output = NormalOutput::new(verbose, dry_run);
+    let setup = Setup::new(dry_run, test_dir, &output);
     setup.setup()?;
-
     Ok(())
 }
 
@@ -299,22 +298,19 @@ fn run_install(
     dry_run: bool,
     test_dir: Option<PathBuf>,
 ) -> Result<(), InstallError> {
-    let output = create_output_handler(verbose, dry_run);
+    let output = NormalOutput::new(verbose, dry_run);
     let config = InstallConfig::new(project_path, rename, use_debug, verbose, dry_run, test_dir);
 
-    // Validation phase
-    let validator = Validator::new(&config, output.as_ref());
+    let validator = Validator::new(&config, &output);
     let validation_result = validator.validate()?;
 
-    // Installation phase
     let installer = Installer::new(
         &config,
         validation_result.binary_name,
         validation_result.source_binary_path,
-        output.as_ref(),
+        &output,
     );
     installer.install()?;
-
     Ok(())
 }
 
@@ -323,8 +319,7 @@ fn run_list(
     sort_order_str: &str,
     test_dir: Option<PathBuf>,
 ) -> Result<(), InstallError> {
-    let output = create_output_handler(verbose, false);
-
+    let output = NormalOutput::new(verbose, false);
     let sort_order = match sort_order_str.parse::<SortOrder>() {
         Ok(order) => order,
         Err(e) => {
@@ -332,10 +327,8 @@ fn run_list(
             process::exit(1);
         }
     };
-
-    let lister = Lister::new(test_dir, sort_order, output.as_ref());
+    let lister = Lister::new(test_dir, sort_order, &output);
     lister.list()?;
-
     Ok(())
 }
 
@@ -345,9 +338,8 @@ fn run_uninstall(
     dry_run: bool,
     test_dir: Option<PathBuf>,
 ) -> Result<(), InstallError> {
-    let output = create_output_handler(verbose, dry_run);
-    let uninstaller = Uninstaller::new(binary_name, dry_run, test_dir, output.as_ref());
+    let output = NormalOutput::new(verbose, dry_run);
+    let uninstaller = Uninstaller::new(binary_name, dry_run, test_dir, &output);
     uninstaller.uninstall()?;
-
     Ok(())
 }

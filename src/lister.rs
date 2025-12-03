@@ -1,8 +1,8 @@
 // Copyright (c) 2025 Michael A Wright
 // Licensed under the MIT License
 
-use crate::error::{InstallError, Result};
-use crate::output::OutputHandler;
+use crate::output::NormalOutput;
+use crate::{InstallError, Result};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
@@ -52,15 +52,11 @@ struct BinaryInfo {
 pub struct Lister<'a> {
     test_dir: Option<PathBuf>,
     sort_order: SortOrder,
-    output: &'a dyn OutputHandler,
+    output: &'a NormalOutput,
 }
 
 impl<'a> Lister<'a> {
-    pub fn new(
-        test_dir: Option<PathBuf>,
-        sort_order: SortOrder,
-        output: &'a dyn OutputHandler,
-    ) -> Self {
+    pub fn new(test_dir: Option<PathBuf>, sort_order: SortOrder, output: &'a NormalOutput) -> Self {
         Self {
             test_dir,
             sort_order,
@@ -70,33 +66,46 @@ impl<'a> Lister<'a> {
 
     pub fn list(&self) -> Result<Vec<String>> {
         self.output.step("Listing installed binaries...");
-
         let bin_dir = self.destination_dir()?;
         if !bin_dir.exists() {
             return Err(InstallError::InstallDirNotFound(bin_dir));
         }
 
         let mut binaries = self.collect_binaries(&bin_dir)?;
-        self.sort_binaries(&mut binaries);
-        self.print_binaries(&binaries);
 
-        Ok(binaries.iter().map(|b| b.name.clone()).collect())
+        // Sort binaries
+        match self.sort_order {
+            SortOrder::Name => binaries.sort_by(|a, b| a.name.cmp(&b.name)),
+            SortOrder::Oldest => binaries.sort_by(|a, b| a.modified_time.cmp(&b.modified_time)),
+            SortOrder::Newest => binaries.sort_by(|a, b| b.modified_time.cmp(&a.modified_time)),
+        }
+
+        // Print binaries
+        if binaries.is_empty() {
+            println!("No binaries installed");
+        } else {
+            let now = SystemTime::now();
+            for binary in &binaries {
+                println!(
+                    "{} ({})",
+                    binary.name,
+                    format_time_ago(now, binary.modified_time)
+                );
+            }
+        }
+
+        Ok(binaries.into_iter().map(|b| b.name).collect())
     }
 
     fn collect_binaries(&self, bin_dir: &Path) -> Result<Vec<BinaryInfo>> {
-        let entries = fs::read_dir(bin_dir)?;
         let mut binaries = Vec::new();
-
-        for entry in entries {
-            let entry = entry?;
-            let path = entry.path();
-
+        for entry in fs::read_dir(bin_dir)? {
+            let path = entry?.path();
             if path.is_file()
                 && let Some(name) = path.file_name()
                 && let Some(name_str) = name.to_str()
             {
-                let metadata = fs::metadata(&path)?;
-                let modified_time = metadata.modified()?;
+                let modified_time = fs::metadata(&path)?.modified()?;
                 binaries.push(BinaryInfo {
                     name: name_str.to_string(),
                     modified_time,
@@ -104,26 +113,6 @@ impl<'a> Lister<'a> {
             }
         }
         Ok(binaries)
-    }
-
-    fn sort_binaries(&self, binaries: &mut [BinaryInfo]) {
-        match self.sort_order {
-            SortOrder::Name => binaries.sort_by(|a, b| a.name.cmp(&b.name)),
-            SortOrder::Oldest => binaries.sort_by(|a, b| a.modified_time.cmp(&b.modified_time)),
-            SortOrder::Newest => binaries.sort_by(|a, b| b.modified_time.cmp(&a.modified_time)),
-        }
-    }
-
-    fn print_binaries(&self, binaries: &[BinaryInfo]) {
-        if binaries.is_empty() {
-            println!("No binaries installed");
-        } else {
-            let now = SystemTime::now();
-            for binary in binaries {
-                let time_ago = format_time_ago(now, binary.modified_time);
-                println!("{} ({})", binary.name, time_ago);
-            }
-        }
     }
 
     fn destination_dir(&self) -> Result<PathBuf> {

@@ -5,8 +5,7 @@
 
 use std::fs;
 use std::path::{Path, PathBuf};
-use sw_install::output::NormalOutput;
-use sw_install::{InstallConfig, InstallError, Validator};
+use sw_install::{InstallConfig, InstallError, NormalOutput, Validator};
 use tempfile::TempDir;
 
 fn create_test_project(dir: &Path, include_binary: bool) -> std::io::Result<()> {

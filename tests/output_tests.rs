@@ -1,30 +1,30 @@
 // Copyright (c) 2025 Michael A Wright
 // Licensed under the MIT License
 
-//! Tests for the OutputHandler module.
+//! Tests for the NormalOutput module.
 
-use sw_install::create_output_handler;
+use sw_install::NormalOutput;
 
 #[test]
 fn test_create_normal_output() {
-    let output = create_output_handler(false, false);
+    let output = NormalOutput::new(false, false);
     output.success("test");
 }
 
 #[test]
 fn test_create_verbose_output() {
-    let output = create_output_handler(true, false);
+    let output = NormalOutput::new(true, false);
     output.step("test");
 }
 
 #[test]
 fn test_create_dry_run_output() {
-    let output = create_output_handler(false, true);
+    let output = NormalOutput::new(false, true);
     output.success("test");
 }
 
 #[test]
 fn test_create_verbose_dry_run_output() {
-    let output = create_output_handler(true, true);
+    let output = NormalOutput::new(true, true);
     output.step("test");
 }

@@ -135,6 +135,99 @@ installer.rs (depends on config, error, validator)
 main.rs (depends on everything)
 ```
 
+### 7. Refactor Upward, Never Downward
+
+When faced with constraint violations (too many functions, too many modules), always prefer **splitting upward** over **merging downward**.
+
+**The Refactoring Direction Principle:**
+
+```
+Functions → Modules → Crates → Components
+     ↑          ↑         ↑
+   SPLIT      SPLIT     SPLIT
+   (good)     (good)    (good)
+
+Functions ← Modules ← Crates ← Components
+     ↓          ↓         ↓
+   MERGE      MERGE     MERGE
+   (avoid)    (avoid)   (avoid)
+```
+
+**Why Splitting is Preferred:**
+
+1. **Maintains Separation of Concerns**: Splitting creates clear boundaries between concepts
+2. **Enables Future Growth**: Split code is easier to extend without violating constraints
+3. **Improves Testability**: Smaller, focused units are easier to test in isolation
+4. **Reduces Cognitive Load**: Each unit remains within Miller's Law limits
+5. **Creates Reusable Components**: Split code can be shared across projects
+
+**Why Merging is Problematic:**
+
+1. **Delays Inevitable Refactoring**: Merged code will eventually need to be split anyway
+2. **Creates Hidden Dependencies**: Merged modules often have tangled internal dependencies
+3. **Increases Cognitive Load**: Combined modules require understanding more context at once
+4. **Reduces Clarity**: The purpose of a merged module becomes less clear
+5. **Makes Testing Harder**: Merged code has more internal state to manage
+
+**Example - Wrong Approach (Merging Down):**
+
+```rust
+// WRONG: Merging error.rs and config.rs into lib.rs to reduce module count
+// lib.rs now has 10+ functions and multiple responsibilities
+
+pub enum InstallError { ... }
+pub struct InstallConfig { ... }
+impl InstallConfig { ... }  // 5 functions
+// Plus re-exports
+```
+
+**Example - Right Approach (Splitting Up):**
+
+```rust
+// RIGHT: Split validator.rs (14 functions) into submodules
+// Creates: src/validation/mod.rs + project.rs + binary.rs + freshness.rs
+
+// src/validation/mod.rs (3 functions - orchestration only)
+mod project;
+mod binary;
+mod freshness;
+
+pub use project::ProjectType;
+pub struct Validator { ... }
+
+impl Validator {
+    pub fn validate(&self) -> Result<ValidationResult> {
+        let project_type = project::detect(&self.config.project_path)?;
+        let binary_name = binary::extract(&project_type)?;
+        freshness::check(&binary_path)?;
+        // ...
+    }
+}
+
+// src/validation/project.rs (4 functions)
+// src/validation/binary.rs (4 functions)
+// src/validation/freshness.rs (3 functions)
+```
+
+**When You Think You Need to Merge, Instead:**
+
+1. **Too many modules?** → Create a subdirectory with mod.rs, move related modules into it
+2. **Too many functions in a module?** → Split into submodules by responsibility
+3. **Too many lines in a file?** → Extract types, helpers, or tests into separate files
+4. **lib.rs getting complex?** → Keep it as pure re-exports, move logic to modules
+
+**The Constraint Escalation Path:**
+
+When a constraint is violated, consider these options in order:
+
+1. **Extract tests** to `tests/` directory (immediate win, always do this first)
+2. **Split functions** into helpers (reduces function line count)
+3. **Create submodules** within the same directory (reduces module function count)
+4. **Create a new crate** in the workspace (for larger extractions)
+5. **Create a new component** (for major architectural boundaries)
+
+Never consider merging until you've exhausted all splitting options.
+
 ---
 
 ## Module Organization Strategies

@@ -1,8 +1,8 @@
 // Copyright (c) 2025 Michael A Wright
 // Licensed under the MIT License
 
-use crate::error::{InstallError, Result};
-use crate::output::OutputHandler;
+use crate::output::NormalOutput;
+use crate::{InstallError, Result};
 use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -10,11 +10,11 @@ use std::path::{Path, PathBuf};
 pub struct Setup<'a> {
     dry_run: bool,
     test_dir: Option<PathBuf>,
-    output: &'a dyn OutputHandler,
+    output: &'a NormalOutput,
 }
 
 impl<'a> Setup<'a> {
-    pub fn new(dry_run: bool, test_dir: Option<PathBuf>, output: &'a dyn OutputHandler) -> Self {
+    pub fn new(dry_run: bool, test_dir: Option<PathBuf>, output: &'a NormalOutput) -> Self {
         Self {
             dry_run,
             test_dir,
