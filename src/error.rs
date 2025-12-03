@@ -26,6 +26,11 @@ pub enum InstallError {
     )]
     BinaryNotFound(PathBuf),
 
+    #[error(
+        "Binary is older than source files: {0}\nHint: Run 'cargo build --release' in the project directory"
+    )]
+    BinaryOutdated(PathBuf),
+
     #[error("Binary not installed: {0}")]
     BinaryNotInstalled(String),
 

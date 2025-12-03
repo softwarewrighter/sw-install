@@ -6,6 +6,7 @@ use crate::error::{InstallError, Result};
 use crate::output::OutputHandler;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::time::SystemTime;
 
 #[derive(Debug)]
 pub struct ValidationResult {
@@ -292,6 +293,59 @@ impl<'a> Validator<'a> {
             return Err(InstallError::BinaryNotFound(source_path));
         }
 
+        // Check if binary is older than source files
+        let source_root = match project_type {
+            ProjectType::Simple | ProjectType::Workspace => self.config.project_path.clone(),
+            ProjectType::MultiComponent { component_path } => component_path.clone(),
+        };
+        self.check_binary_freshness(&source_path, &source_root)?;
+
         Ok(source_path)
     }
+
+    /// Check if the binary is newer than all source files
+    fn check_binary_freshness(&self, binary_path: &Path, source_root: &Path) -> Result<()> {
+        let binary_time = fs::metadata(binary_path)
+            .and_then(|m| m.modified())
+            .unwrap_or(SystemTime::UNIX_EPOCH);
+
+        let newest_source = find_newest_source_file(source_root);
+
+        if let Some(source_time) = newest_source
+            && source_time > binary_time
+        {
+            return Err(InstallError::BinaryOutdated(binary_path.to_path_buf()));
+        }
+
+        Ok(())
+    }
+}
+
+/// Recursively find the newest .rs file modification time
+fn find_newest_source_file(dir: &Path) -> Option<SystemTime> {
+    let mut newest: Option<SystemTime> = None;
+
+    if let Ok(entries) = fs::read_dir(dir) {
+        for entry in entries.filter_map(|e| e.ok()) {
+            let path = entry.path();
+
+            // Skip target directory
+            if path.file_name().is_some_and(|n| n == "target") {
+                continue;
+            }
+
+            if path.is_dir() {
+                if let Some(time) = find_newest_source_file(&path) {
+                    newest = Some(newest.map_or(time, |n| n.max(time)));
+                }
+            } else if path.extension().is_some_and(|e| e == "rs")
+                && let Ok(metadata) = fs::metadata(&path)
+                && let Ok(modified) = metadata.modified()
+            {
+                newest = Some(newest.map_or(modified, |n| n.max(modified)));
+            }
+        }
+    }
+
+    newest
 }
