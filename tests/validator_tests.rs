@@ -86,7 +86,7 @@ fn test_validate_fails_when_project_path_missing() {
         false,
         None,
     );
-    let output = NormalOutput;
+    let output = NormalOutput::default();
     let validator = Validator::new(&config, &output);
 
     let result = validator.validate();
@@ -108,7 +108,7 @@ fn test_validate_fails_when_cargo_toml_missing() {
         false,
         None,
     );
-    let output = NormalOutput;
+    let output = NormalOutput::default();
     let validator = Validator::new(&config, &output);
 
     let result = validator.validate();
@@ -132,7 +132,7 @@ fn test_validate_fails_when_binary_missing() {
         false,
         None,
     );
-    let output = NormalOutput;
+    let output = NormalOutput::default();
     let validator = Validator::new(&config, &output);
 
     let result = validator.validate();
@@ -156,7 +156,7 @@ fn test_validate_succeeds_with_valid_project() {
         false,
         None,
     );
-    let output = NormalOutput;
+    let output = NormalOutput::default();
     let validator = Validator::new(&config, &output);
 
     let result = validator.validate();
@@ -189,7 +189,7 @@ fn test_workspace_with_library_only_members_ignores_libs() {
         false,
         None,
     );
-    let output = NormalOutput;
+    let output = NormalOutput::default();
     let validator = Validator::new(&config, &output);
 
     let result = validator.validate();
@@ -223,7 +223,7 @@ fn test_multi_component_project_detection() {
         false,
         None,
     );
-    let output = NormalOutput;
+    let output = NormalOutput::default();
     let validator = Validator::new(&config, &output);
 
     let result = validator.validate();
