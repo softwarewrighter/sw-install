@@ -1,29 +1,23 @@
 // Copyright (c) 2025 Michael A Wright
 // Licensed under the MIT License
 
-//! Output handling for different verbosity and dry-run modes.
-
-/// Output mode configuration
 #[derive(Debug, Clone, Copy)]
-pub enum OutputMode {
+enum OutputMode {
     Normal,
     Verbose,
     DryRun { verbose: bool },
 }
 
-/// Output handler supporting all modes
 pub struct NormalOutput {
     mode: OutputMode,
 }
 
 impl NormalOutput {
     pub fn new(verbose: bool, dry_run: bool) -> Self {
-        let mode = if dry_run {
-            OutputMode::DryRun { verbose }
-        } else if verbose {
-            OutputMode::Verbose
-        } else {
-            OutputMode::Normal
+        let mode = match (dry_run, verbose) {
+            (true, v) => OutputMode::DryRun { verbose: v },
+            (false, true) => OutputMode::Verbose,
+            (false, false) => OutputMode::Normal,
         };
         Self { mode }
     }
@@ -32,26 +26,15 @@ impl NormalOutput {
         match self.mode {
             OutputMode::Normal => {}
             OutputMode::Verbose => println!("{}", message),
-            OutputMode::DryRun { verbose } if verbose => println!("Would: {}", message),
-            OutputMode::DryRun { .. } => {}
+            OutputMode::DryRun { verbose: true } => println!("Would: {}", message),
+            OutputMode::DryRun { verbose: false } => {}
         }
-    }
-
-    pub fn step(&self, message: &str) {
-        self.info(message);
     }
 
     pub fn success(&self, message: &str) {
         match self.mode {
             OutputMode::Normal | OutputMode::Verbose => println!("{}", message),
             OutputMode::DryRun { .. } => println!("Would: {}", message),
-        }
-    }
-
-    pub fn error(&self, message: &str) {
-        match self.mode {
-            OutputMode::Normal | OutputMode::Verbose => eprintln!("Error: {}", message),
-            OutputMode::DryRun { .. } => eprintln!("Would encounter error: {}", message),
         }
     }
 }

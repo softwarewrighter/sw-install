@@ -1,0 +1,28 @@
+[package]
+name = "sw-install"
+version = "0.1.0"
+edition = "2024"
+authors = ["Michael A Wright"]
+license = "MIT"
+description = "Install softwarewrighter binaries to local PATH"
+repository = "https://github.com/softwarewrighter/sw-install"
+
+[[bin]]
+name = "sw-install"
+path = "src/main.rs"
+
+[dependencies]
+sw-install-core = { path = "../sw-install-core" }
+sw-install-validation = { path = "../sw-install-validation" }
+sw-install-installer = { path = "../sw-install-installer" }
+sw-install-manage = { path = "../sw-install-manage" }
+sw-install-list = { path = "../sw-install-list" }
+clap = { version = "4.5", features = ["derive"] }
+
+[dev-dependencies]
+tempfile = "3.0"
+serial_test = "3.0"
+
+[build-dependencies]
+hostname = "0.4"
+chrono = "0.4"

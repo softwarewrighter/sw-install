@@ -3,11 +3,13 @@
 
 set -e
 
-cd "$(dirname "$0")/.."
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+BINARY="$PROJECT_ROOT/components/sw-install-cli/target/release/sw-install"
 
 # Build if needed
-if [ ! -f target/release/sw-install ]; then
-    cargo build --release
+if [ ! -f "$BINARY" ]; then
+    "$SCRIPT_DIR/build.sh"
 fi
 
-exec ./target/release/sw-install "$@"
+exec "$BINARY" "$@"

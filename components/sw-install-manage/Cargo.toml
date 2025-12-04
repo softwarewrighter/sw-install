@@ -1,0 +1,10 @@
+[package]
+name = "sw-install-manage"
+version = "0.1.0"
+edition = "2024"
+authors = ["Michael A Wright"]
+license = "MIT"
+description = "List and setup operations for sw-install"
+
+[dependencies]
+sw-install-core = { path = "../sw-install-core" }

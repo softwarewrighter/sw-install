@@ -1,0 +1,9 @@
+[package]
+name = "sw-install-list"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+description = "List installed binaries for sw-install"
+
+[dependencies]
+sw-install-core = { path = "../sw-install-core" }

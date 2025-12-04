@@ -14,7 +14,7 @@ fn test_create_normal_output() {
 #[test]
 fn test_create_verbose_output() {
     let output = NormalOutput::new(true, false);
-    output.step("test");
+    output.info("test");
 }
 
 #[test]
@@ -26,5 +26,5 @@ fn test_create_dry_run_output() {
 #[test]
 fn test_create_verbose_dry_run_output() {
     let output = NormalOutput::new(true, true);
-    output.step("test");
+    output.info("test");
 }

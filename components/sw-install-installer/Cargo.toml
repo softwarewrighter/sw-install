@@ -1,0 +1,10 @@
+[package]
+name = "sw-install-installer"
+version = "0.1.0"
+edition = "2024"
+authors = ["Michael A Wright"]
+license = "MIT"
+description = "Install and uninstall operations for sw-install"
+
+[dependencies]
+sw-install-core = { path = "../sw-install-core" }

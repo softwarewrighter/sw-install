@@ -2,184 +2,216 @@
 
 ## sw-install
 
-### Module Structure
+### Multi-Component Structure
+
+The project is organized as 7 independent components, each with its own Cargo.toml:
 
 ```
 sw-install/
-├── build.rs              # Build-time metadata capture (host, commit, timestamp)
-├── src/
-│   ├── main.rs           # Entry point, CLI parsing, version info
-│   ├── config.rs         # Configuration and path logic
-│   ├── validator.rs      # Project and binary validation
-│   ├── installer.rs      # Installation operations
-│   ├── uninstaller.rs    # Uninstallation operations
-│   ├── setup.rs          # First-time setup and PATH configuration
-│   ├── output.rs         # Output handling (verbose, dry-run)
-│   ├── error.rs          # Error types
-│   └── lib.rs            # Library exports for testing
-├── tests/
-│   └── integration.rs    # Integration tests
-└── docs/                 # Documentation
+├── components/
+│   ├── sw-install-core/
+│   │   ├── Cargo.toml
+│   │   └── src/
+│   │       ├── lib.rs        # InstallError, Result, re-exports
+│   │       ├── config.rs     # InstallConfig struct
+│   │       ├── output.rs     # NormalOutput struct
+│   │       └── format.rs     # format_time_ago utility
+│   │
+│   ├── sw-install-workspace/
+│   │   ├── Cargo.toml
+│   │   └── src/
+│   │       └── lib.rs        # Workspace binary discovery
+│   │
+│   ├── sw-install-validation/
+│   │   ├── Cargo.toml
+│   │   └── src/
+│   │       ├── lib.rs        # Validator, ValidationResult
+│   │       ├── detect.rs     # Project type detection
+│   │       ├── extract.rs    # Binary name extraction
+│   │       └── source.rs     # Source binary validation
+│   │
+│   ├── sw-install-installer/
+│   │   ├── Cargo.toml
+│   │   └── src/
+│   │       ├── lib.rs        # Re-exports
+│   │       ├── install.rs    # Installer struct
+│   │       ├── uninstall.rs  # Uninstaller struct
+│   │       └── paths.rs      # Path utilities
+│   │
+│   ├── sw-install-manage/
+│   │   ├── Cargo.toml
+│   │   └── src/
+│   │       ├── lib.rs        # Re-exports
+│   │       ├── setup.rs      # Setup struct
+│   │       └── shell.rs      # Shell configuration
+│   │
+│   ├── sw-install-list/
+│   │   ├── Cargo.toml
+│   │   └── src/
+│   │       ├── lib.rs        # Re-exports
+│   │       ├── list.rs       # Lister struct
+│   │       ├── binaries.rs   # Binary collection
+│   │       └── sort.rs       # SortOrder enum
+│   │
+│   └── sw-install-cli/
+│       ├── Cargo.toml
+│       ├── build.rs          # Build-time metadata
+│       └── src/
+│           ├── main.rs       # Entry point, CLI parsing
+│           ├── install.rs    # Install command
+│           ├── manage.rs     # Setup, list, uninstall commands
+│           ├── version.rs    # Version display
+│           └── help.txt      # Extended help text
+│
+├── scripts/
+│   └── build.sh              # Build all components
+│
+└── docs/                     # Documentation
 ```
 
 ### API Design
 
-#### Configuration Module (config.rs)
+#### Core Module (sw-install-core)
 
 ```rust
+// config.rs
 pub struct InstallConfig {
-    project_path: PathBuf,
-    binary_name: Option<String>,
-    use_debug: bool,
-    verbose: bool,
-    dry_run: bool,
+    pub project_path: PathBuf,
+    pub binary_name: Option<String>,
+    pub use_debug: bool,
+    pub verbose: bool,
+    pub dry_run: bool,
 }
 
 impl InstallConfig {
-    pub fn new(
-        project_path: PathBuf,
-        binary_name: Option<String>,
-        use_debug: bool,
-        verbose: bool,
-        dry_run: bool,
-    ) -> Self;
-
+    pub fn new(project_path: PathBuf, binary_name: Option<String>,
+               use_debug: bool, verbose: bool, dry_run: bool) -> Self;
     pub fn destination_dir(&self) -> Result<PathBuf>;
     pub fn source_binary_path(&self, actual_name: &str) -> PathBuf;
-    pub fn destination_binary_path(&self, actual_name: &str) -> Result<PathBuf>;
-    pub fn target_subdir(&self) -> &str;
-}
-```
-
-#### Validator Module (validator.rs)
-
-```rust
-pub struct Validator<'a> {
-    config: &'a InstallConfig,
-    output: Box<dyn OutputHandler>,
 }
 
-impl<'a> Validator<'a> {
-    pub fn new(config: &'a InstallConfig, output: Box<dyn OutputHandler>) -> Self;
-
-    pub fn validate(&self) -> Result<ValidationResult>;
-
-    fn validate_project_path(&self) -> Result<()>;
-    fn validate_cargo_toml(&self) -> Result<()>;
-    fn extract_binary_name(&self) -> Result<String>;
-    fn validate_source_binary(&self, binary_name: &str) -> Result<()>;
-}
-
-pub struct ValidationResult {
-    pub binary_name: String,
-}
-```
-
-#### Installer Module (installer.rs)
-
-```rust
-pub struct Installer<'a> {
-    config: &'a InstallConfig,
-    binary_name: String,
-    output: Box<dyn OutputHandler>,
-}
-
-impl<'a> Installer<'a> {
-    pub fn new(
-        config: &'a InstallConfig,
-        binary_name: String,
-        output: Box<dyn OutputHandler>,
-    ) -> Self;
-
-    pub fn install(&self) -> Result<()>;
-
-    fn create_destination_dir(&self) -> Result<PathBuf>;
-    fn copy_binary(&self, dest_dir: &Path) -> Result<PathBuf>;
-    fn set_permissions(&self, binary_path: &Path) -> Result<()>;
-}
-```
-
-#### Uninstaller Module (uninstaller.rs)
-
-```rust
-pub struct Uninstaller {
-    binary_name: String,
+// output.rs
+pub struct NormalOutput {
     verbose: bool,
     dry_run: bool,
-    output: Box<dyn OutputHandler>,
 }
 
-impl Uninstaller {
-    pub fn new(
-        binary_name: String,
-        verbose: bool,
-        dry_run: bool,
-        output: Box<dyn OutputHandler>,
-    ) -> Self;
-
-    pub fn uninstall(&self) -> Result<()>;
-
-    fn destination_dir(&self) -> Result<PathBuf>;
-    fn binary_path(&self) -> Result<PathBuf>;
-    fn validate_binary_exists(&self) -> Result<()>;
-    fn remove_binary(&self, binary_path: &Path) -> Result<()>;
-}
-```
-
-#### Output Module (output.rs)
-
-```rust
-pub trait OutputHandler: Send + Sync {
-    fn info(&self, message: &str);
-    fn step(&self, message: &str);
-    fn success(&self, message: &str);
-    fn error(&self, message: &str);
+impl NormalOutput {
+    pub fn new(verbose: bool, dry_run: bool) -> Self;
+    pub fn info(&self, message: &str);
+    pub fn success(&self, message: &str);
 }
 
-pub struct NormalOutput;
-pub struct VerboseOutput;
-pub struct DryRunOutput;
-
-impl OutputHandler for NormalOutput { /* ... */ }
-impl OutputHandler for VerboseOutput { /* ... */ }
-impl OutputHandler for DryRunOutput { /* ... */ }
-
-pub fn create_output_handler(verbose: bool, dry_run: bool) -> Box<dyn OutputHandler>;
-```
-
-#### Error Module (error.rs)
-
-```rust
-use thiserror::Error;
-
+// lib.rs
 #[derive(Error, Debug)]
 pub enum InstallError {
     #[error("Project path does not exist: {0}")]
     ProjectNotFound(PathBuf),
-
-    #[error("Cargo.toml not found in project: {0}")]
-    CargoTomlNotFound(PathBuf),
-
-    #[error("Could not parse Cargo.toml: {0}")]
-    CargoTomlParse(String),
-
-    #[error("Binary name not found in Cargo.toml")]
-    BinaryNameNotFound,
-
-    #[error("Source binary not found: {0}")]
-    BinaryNotFound(PathBuf),
-
-    #[error("IO error: {0}")]
-    Io(#[from] std::io::Error),
-
-    #[error("Invalid binary name: {0}")]
-    InvalidBinaryName(String),
-
-    #[error("Home directory not found")]
-    HomeNotFound,
+    // ... other variants
 }
 
 pub type Result<T> = std::result::Result<T, InstallError>;
+
+// format.rs
+pub fn format_time_ago(now: SystemTime, then: SystemTime) -> String;
+```
+
+#### Validation Module (sw-install-validation)
+
+```rust
+// lib.rs
+pub struct ValidationResult {
+    pub binary_name: String,
+    pub source_binary_path: PathBuf,
+}
+
+pub struct Validator<'a> {
+    config: &'a InstallConfig,
+    output: &'a NormalOutput,
+}
+
+impl<'a> Validator<'a> {
+    pub fn new(config: &'a InstallConfig, output: &'a NormalOutput) -> Self;
+    pub fn validate(&self) -> Result<ValidationResult>;
+}
+
+// detect.rs (internal)
+pub(crate) enum ProjectType {
+    Simple,
+    Workspace,
+    MultiComponent { component_path: PathBuf },
+}
+
+pub(crate) fn detect_project_type(validator: &Validator) -> Result<ProjectType>;
+```
+
+#### Installer Module (sw-install-installer)
+
+```rust
+// install.rs
+pub struct Installer<'a> {
+    config: &'a InstallConfig,
+    validation: ValidationResult,
+    output: &'a NormalOutput,
+}
+
+impl<'a> Installer<'a> {
+    pub fn new(config: &'a InstallConfig, validation: ValidationResult,
+               output: &'a NormalOutput) -> Self;
+    pub fn install(&self) -> Result<()>;
+}
+
+// uninstall.rs
+pub struct Uninstaller<'a> {
+    binary_name: String,
+    dry_run: bool,
+    test_dir: Option<PathBuf>,
+    output: &'a NormalOutput,
+}
+
+impl<'a> Uninstaller<'a> {
+    pub fn new(name: String, dry_run: bool, test_dir: Option<PathBuf>,
+               out: &'a NormalOutput) -> Self;
+    pub fn uninstall(&self) -> Result<()>;
+}
+```
+
+#### List Module (sw-install-list)
+
+```rust
+// sort.rs
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SortOrder { Name, Oldest, Newest }
+
+// list.rs
+pub struct Lister<'a> {
+    test_dir: Option<PathBuf>,
+    sort_order: SortOrder,
+    output: &'a NormalOutput,
+}
+
+impl<'a> Lister<'a> {
+    pub fn new(test_dir: Option<PathBuf>, sort_order: SortOrder,
+               output: &'a NormalOutput) -> Self;
+    pub fn list(&self) -> Result<Vec<String>>;
+}
+```
+
+#### Manage Module (sw-install-manage)
+
+```rust
+// setup.rs
+pub struct Setup<'a> {
+    dry_run: bool,
+    test_dir: Option<PathBuf>,
+    output: &'a NormalOutput,
+}
+
+impl<'a> Setup<'a> {
+    pub fn new(dry_run: bool, test_dir: Option<PathBuf>,
+               output: &'a NormalOutput) -> Self;
+    pub fn setup(&self) -> Result<()>;
+}
 ```
 
 ### CLI Interface Design
@@ -189,105 +221,38 @@ use clap::Parser;
 
 #[derive(Parser, Debug)]
 #[command(name = "sw-install")]
-#[command(about = "Install softwarewrighter binaries to local PATH", long_about = EXTENDED_HELP)]
-#[command(version)]
-#[command(author = "Copyright (c) 2025 Michael A Wright")]
+#[command(about = "Install softwarewrighter binaries to local PATH")]
 struct Args {
-    /// Path to the Cargo project (for installation)
-    #[arg(short, long, value_name = "PATH", conflicts_with = "uninstall")]
+    #[arg(short, long, value_name = "PATH")]
     project: Option<PathBuf>,
 
-    /// Rename the binary during installation
-    #[arg(short, long, value_name = "NAME", requires = "project")]
+    #[arg(short, long, value_name = "NAME")]
     rename: Option<String>,
 
-    /// Use debug build instead of release
-    #[arg(short, long, requires = "project")]
-    debug: bool,
+    #[arg(long, default_value = "release")]
+    r#type: String,
 
-    /// Uninstall the named binary
-    #[arg(short, long, value_name = "NAME", conflicts_with = "project")]
+    #[arg(short, long, value_name = "NAME")]
     uninstall: Option<String>,
 
-    /// Show verbose output
+    #[arg(short, long)]
+    list: bool,
+
+    #[arg(short, long, default_value = "name")]
+    sort: String,
+
+    #[arg(long)]
+    setup_install_dir: bool,
+
     #[arg(short, long)]
     verbose: bool,
 
-    /// Print actions without executing them
     #[arg(short = 'n', long)]
     dry_run: bool,
+
+    #[arg(short, long)]
+    test_dir: Option<PathBuf>,
 }
-
-const EXTENDED_HELP: &str = "\
-sw-install: Binary Installer for softwarewrighter CLI Projects
-
-OVERVIEW:
-  This tool installs compiled Rust binaries from local Cargo projects into
-  ~/.local/softwarewrighter/bin/, making them accessible from your PATH.
-
-USAGE MODES:
-
-  1. Install a binary:
-     sw-install -p <project-path> [OPTIONS]
-
-  2. Uninstall a binary:
-     sw-install -u <binary-name> [OPTIONS]
-
-EXAMPLES:
-
-  Install a release binary:
-    sw-install -p ~/projects/ask
-
-  Install with a different name:
-    sw-install -p ~/projects/ask -r ask-dev
-
-  Install debug build:
-    sw-install -p ~/projects/ask -d
-
-  Preview installation (dry-run):
-    sw-install -p ~/projects/ask -n -v
-
-  Uninstall a binary:
-    sw-install -u ask
-
-  Uninstall with preview:
-    sw-install -u ask -n -v
-
-PREREQUISITES:
-  - Project must have a Cargo.toml file
-  - Binary must be compiled (run 'cargo build --release' or 'cargo build')
-  - ~/.local/softwarewrighter/bin should be in your PATH
-
-WORKFLOW:
-  1. Validates project path and Cargo.toml
-  2. Extracts binary name from Cargo.toml
-  3. Verifies compiled binary exists in target/release or target/debug
-  4. Creates destination directory if needed
-  5. Copies binary to ~/.local/softwarewrighter/bin/
-  6. Sets executable permissions
-
-AI AGENT GUIDANCE:
-  This tool is designed for automated binary installation in development
-  workflows. Key features for automation:
-  - Use --dry-run (-n) to preview actions before execution
-  - Use --verbose (-v) to see detailed step-by-step output
-  - Check exit codes: 0 = success, non-zero = error
-  - Combine flags: -nvp for verbose dry-run installation
-  - All file paths are validated before operations
-  - Errors include actionable suggestions
-
-ERROR HANDLING:
-  - Missing project: 'Project path does not exist'
-  - Missing Cargo.toml: 'Cargo.toml not found in project'
-  - Binary not built: 'Source binary not found' (suggests running cargo build)
-  - Permission errors: Reports specific file/directory issues
-
-SECURITY:
-  - Operates only in user-owned directories
-  - No privilege escalation required
-  - Validates all paths to prevent traversal attacks
-  - Safe to run in automated environments
-";
 ```
 
 ### Execution Flow
@@ -295,220 +260,87 @@ SECURITY:
 ```
 main()
   ├─> Parse CLI arguments (clap)
-  ├─> Create InstallConfig from args
-  ├─> Create OutputHandler (normal/verbose/dry-run)
-  ├─> Create Validator
-  ├─> validator.validate()
-  │     ├─> Check project path exists
-  │     ├─> Check Cargo.toml exists
-  │     ├─> Parse Cargo.toml for binary name
-  │     └─> Check binary exists in target/
-  ├─> Create Installer with validated binary name
-  └─> installer.install()
-        ├─> Create destination directory
-        ├─> Copy binary
-        ├─> Set executable permissions
-        └─> Report success
-```
-
-### Test Design
-
-#### Unit Tests
-
-**config.rs tests:**
-- Test destination_dir() returns ~/.local/softwarewrighter/bin
-- Test source_binary_path() with debug/release variants
-- Test destination_binary_path() with and without rename
-- Test target_subdir() returns "debug" or "release"
-
-**validator.rs tests:**
-- Test validation fails for non-existent project path
-- Test validation fails for missing Cargo.toml
-- Test validation fails for missing binary
-- Test validation succeeds with valid project
-- Test binary name extraction from Cargo.toml
-
-**installer.rs tests:**
-- Test create_destination_dir() creates nested directories
-- Test copy_binary() copies file correctly
-- Test set_permissions() makes binary executable
-- Test dry-run mode doesn't modify filesystem
-
-**output.rs tests:**
-- Test NormalOutput only shows success/error
-- Test VerboseOutput shows all steps
-- Test DryRunOutput prefixes with "Would: "
-
-#### Integration Tests
-
-**tests/integration.rs:**
-- Create temporary Cargo project
-- Build binary
-- Run sw-install on it
-- Verify binary installed to correct location
-- Verify binary is executable
-- Test with --rename option
-- Test with --type debug option
-- Test with --dry-run option
-
-### Path Resolution Examples
-
-**Example 1: Basic installation**
-```
-Input:
-  --project ~/projects/ask
-
-Computed paths:
-  project_path: /Users/mike/projects/ask
-  cargo_toml: /Users/mike/projects/ask/Cargo.toml
-  source_binary: /Users/mike/projects/ask/target/release/ask
-  dest_dir: /Users/mike/.local/softwarewrighter/bin
-  dest_binary: /Users/mike/.local/softwarewrighter/bin/ask
-```
-
-**Example 2: Debug build with rename**
-```
-Input:
-  --project ~/projects/ask
-  --type debug
-  --rename ask-dev
-
-Computed paths:
-  project_path: /Users/mike/projects/ask
-  cargo_toml: /Users/mike/projects/ask/Cargo.toml
-  source_binary: /Users/mike/projects/ask/target/debug/ask
-  dest_dir: /Users/mike/.local/softwarewrighter/bin
-  dest_binary: /Users/mike/.local/softwarewrighter/bin/ask-dev
-```
-
-### Error Handling Examples
-
-**Missing project:**
-```
-Error: Project path does not exist: /Users/mike/projects/nonexistent
-```
-
-**Missing Cargo.toml:**
-```
-Error: Cargo.toml not found in project: /Users/mike/projects/ask
-```
-
-**Binary not compiled:**
-```
-Error: Source binary not found: /Users/mike/projects/ask/target/release/ask
-Hint: Run 'cargo build --release' in the project directory
-```
-
-### Dry-Run Output Example
-
-```
-$ sw-install -p ../ask -n
-Would: Check project path exists: /Users/mike/projects/ask
-Would: Check Cargo.toml exists: /Users/mike/projects/ask/Cargo.toml
-Would: Parse Cargo.toml to extract binary name
-Would: Check source binary exists: /Users/mike/projects/ask/target/release/ask
-Would: Create destination directory: /Users/mike/.local/softwarewrighter/bin
-Would: Copy binary from /Users/mike/projects/ask/target/release/ask
-Would: Copy binary to /Users/mike/.local/softwarewrighter/bin/ask
-Would: Set executable permissions on /Users/mike/.local/softwarewrighter/bin/ask
-Dry-run complete: No changes made
-```
-
-### Verbose Output Example
-
-```
-$ sw-install -p ../ask -v
-[1/7] Checking project path: /Users/mike/projects/ask ... OK
-[2/7] Checking Cargo.toml: /Users/mike/projects/ask/Cargo.toml ... OK
-[3/7] Parsing Cargo.toml ... binary name: ask
-[4/7] Checking source binary: /Users/mike/projects/ask/target/release/ask ... OK
-[5/7] Creating destination directory: /Users/mike/.local/softwarewrighter/bin ... OK
-[6/7] Copying binary ... OK
-[7/7] Setting executable permissions ... OK
-
-Successfully installed: ask
-Location: /Users/mike/.local/softwarewrighter/bin/ask
+  ├─> Dispatch based on operation:
+  │
+  ├─> Install operation (-p):
+  │     ├─> Create InstallConfig
+  │     ├─> Create NormalOutput
+  │     ├─> Create Validator
+  │     ├─> validator.validate()
+  │     │     ├─> Detect project type
+  │     │     ├─> Extract binary name
+  │     │     └─> Validate source binary
+  │     ├─> Create Installer
+  │     └─> installer.install()
+  │           ├─> Create destination directory
+  │           ├─> Copy binary
+  │           └─> Set permissions
+  │
+  ├─> List operation (-l):
+  │     ├─> Create Lister
+  │     └─> lister.list()
+  │
+  ├─> Uninstall operation (-u):
+  │     ├─> Create Uninstaller
+  │     └─> uninstaller.uninstall()
+  │
+  └─> Setup operation (--setup-install-dir):
+        ├─> Create Setup
+        └─> setup.setup()
 ```
 
 ### Build System
 
-#### build.rs
+#### scripts/build.sh
 
-The build script captures build-time metadata that is embedded into the binary:
+Builds all components in dependency order:
+
+```bash
+#!/bin/bash
+set -e
+
+# Build order: core -> workspace -> validation -> installer -> manage -> list -> cli
+cd components/sw-install-core && cargo build --release
+cd ../sw-install-workspace && cargo build --release
+cd ../sw-install-validation && cargo build --release
+cd ../sw-install-installer && cargo build --release
+cd ../sw-install-manage && cargo build --release
+cd ../sw-install-list && cargo build --release
+cd ../sw-install-cli && cargo build --release
+
+echo "Binary: components/sw-install-cli/target/release/sw-install"
+```
+
+#### build.rs (sw-install-cli)
+
+Captures build-time metadata:
 
 ```rust
-use std::process::Command;
-
 fn main() {
-    // Capture hostname (build host)
-    let hostname = Command::new("hostname")
-        .output()
-        .ok()
-        .and_then(|output| String::from_utf8(output.stdout).ok())
-        .map(|s| s.trim().to_string())
-        .unwrap_or_else(|| "unknown".to_string());
+    // Capture hostname, git commit, timestamp
     println!("cargo:rustc-env=BUILD_HOST={}", hostname);
-
-    // Capture git commit SHA
-    let git_hash = Command::new("git")
-        .args(["rev-parse", "--short", "HEAD"])
-        .output()
-        .ok()
-        .and_then(|output| String::from_utf8(output.stdout).ok())
-        .map(|s| s.trim().to_string())
-        .unwrap_or_else(|| "unknown".to_string());
     println!("cargo:rustc-env=GIT_HASH={}", git_hash);
-
-    // Capture build timestamp in ISO 8601 format
-    let timestamp = Command::new("date")
-        .args(["+%Y-%m-%dT%H:%M:%S%z"])
-        .output()
-        .ok()
-        .and_then(|output| String::from_utf8(output.stdout).ok())
-        .map(|s| s.trim().to_string())
-        .unwrap_or_else(|| "unknown".to_string());
     println!("cargo:rustc-env=BUILD_TIMESTAMP={}", timestamp);
-
-    // Rebuild if git HEAD changes
-    println!("cargo:rerun-if-changed=.git/HEAD");
 }
 ```
 
-#### Version Information
+### sw-standards Compliance
 
-The `-V/--version` flag displays enhanced version information:
+The codebase is organized to meet sw-checklist requirements:
 
-```
-$ sw-install --version
-sw-install 0.1.0
-Copyright (c) 2025 Michael A Wright
-License: MIT
-Repository: https://github.com/softwarewrighter/sw-install
+| Metric | Threshold | Status |
+|--------|-----------|--------|
+| Functions per module | ≤4 (warn), ≤7 (fail) | Pass |
+| Modules per crate | ≤4 (warn), ≤7 (fail) | Pass |
+| Lines per function | ≤25 (warn), ≤50 (fail) | Pass |
+| Lines per file | ≤350 (warn), ≤500 (fail) | Pass |
 
-Build Information:
-  Host: manager
-  Commit: 6688d2c
-  Timestamp: 2025-11-14T18:11:38-0800
-```
+**Current: 45 checks passed, 0 failed, 0 code quality warnings**
 
-This is implemented in `main.rs`:
+### Test Strategy
 
-```rust
-const REPOSITORY: &str = "https://github.com/softwarewrighter/sw-install";
-const LICENSE: &str = "MIT";
-const COPYRIGHT: &str = "Copyright (c) 2025 Michael A Wright";
+Tests are located in each component's src/ directory and in the CLI's tests/ directory.
 
-fn print_version() {
-    println!(
-        "{} {}\n{}\nLicense: {}\nRepository: {}\n\nBuild Information:\n  Host: {}\n  Commit: {}\n  Timestamp: {}",
-        env!("CARGO_PKG_NAME"),
-        env!("CARGO_PKG_VERSION"),
-        COPYRIGHT,
-        LICENSE,
-        REPOSITORY,
-        env!("BUILD_HOST"),
-        env!("GIT_HASH"),
-        env!("BUILD_TIMESTAMP")
-    );
-}
-```
+- Unit tests: Test individual functions in isolation
+- Integration tests: Test full workflows with temp directories
+- Test isolation: Use serial_test for filesystem operations

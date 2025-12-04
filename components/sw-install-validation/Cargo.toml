@@ -1,0 +1,12 @@
+[package]
+name = "sw-install-validation"
+version = "0.1.0"
+edition = "2024"
+authors = ["Michael A Wright"]
+license = "MIT"
+description = "Project validation for sw-install"
+
+[dependencies]
+sw-install-core = { path = "../sw-install-core" }
+sw-install-workspace = { path = "../sw-install-workspace" }
+toml = "0.8"

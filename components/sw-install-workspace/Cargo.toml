@@ -1,0 +1,9 @@
+[package]
+name = "sw-install-workspace"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+description = "Cargo workspace utilities for sw-install"
+
+[dependencies]
+toml = "0.8"

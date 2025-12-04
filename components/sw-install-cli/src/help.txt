@@ -1,0 +1,118 @@
+sw-install: Binary Installer for softwarewrighter CLI Projects
+
+OVERVIEW:
+  This tool installs compiled Rust binaries from local Cargo projects into
+  ~/.local/softwarewrighter/bin/, making them accessible from your PATH.
+
+USAGE MODES:
+
+  1. Setup installation directory (first-time use):
+     sw-install --setup-install-dir
+
+  2. Install a binary:
+     sw-install -p <project-path> [OPTIONS]
+
+  3. List installed binaries:
+     sw-install --list
+
+  4. Uninstall a binary:
+     sw-install -u <binary-name> [OPTIONS]
+
+EXAMPLES:
+
+  First-time setup:
+    sw-install --setup-install-dir
+    source ~/.bashrc  # or ~/.zshrc
+
+  Install a release binary:
+    sw-install -p ~/projects/ask
+
+  Install with a different name:
+    sw-install -p ~/projects/ask -r ask-dev
+
+  Install debug build:
+    sw-install -p ~/projects/ask --type debug
+
+  Preview installation (dry-run):
+    sw-install -p ~/projects/ask -n -v
+
+  List installed binaries:
+    sw-install --list
+
+  List with sorting options:
+    sw-install --list --sort name     # Sort alphabetically (default)
+    sw-install --list --sort newest   # Show newest first
+    sw-install --list --sort oldest   # Show oldest first
+
+  Uninstall a binary:
+    sw-install -u ask
+
+  Uninstall with preview:
+    sw-install -u ask -n -v
+
+PREREQUISITES:
+  - Run 'sw-install --setup-install-dir' for first-time setup
+  - Project must have a Cargo.toml file
+  - Binary must be compiled (run 'cargo build --release' or 'cargo build')
+
+WORKSPACE SUPPORT:
+  sw-install automatically detects three project structures:
+
+  1. Simple project: Single Cargo.toml with [package]
+  2. Workspace project: Cargo.toml with [workspace] and members
+  3. Multi-component project: No root Cargo.toml, components/<name>/Cargo.toml
+
+  For workspaces with multiple binary crates, it will list all found binaries
+  and install the first one (use --rename to specify a different name).
+
+AI CODING AGENT INSTRUCTIONS:
+  This tool is designed for automated binary installation in development
+  workflows. Key features for automation:
+
+  1. INSTALLATION WORKFLOW:
+     - Run: sw-install -p /path/to/project
+     - For debug builds: sw-install -p /path/to/project --type debug
+     - For renamed binaries: sw-install -p /path/to/project -r new-name
+     - Preview first: sw-install -p /path/to/project --dry-run -v
+
+  2. LISTING BINARIES:
+     - Run: sw-install --list
+     - Returns sorted list of all installed binaries with timestamps
+     - Use --verbose for detailed output
+     - Sort options: --sort name (default), --sort newest, --sort oldest
+
+  3. UNINSTALLATION WORKFLOW:
+     - Run: sw-install -u binary-name
+     - Preview first: sw-install -u binary-name --dry-run -v
+     - Exit code 0 = success, non-zero = error
+
+  4. FIRST-TIME SETUP:
+     - Run: sw-install --setup-install-dir
+     - Creates installation directory
+     - Configures PATH in shell config
+     - User must reload shell after setup
+
+  5. ERROR HANDLING:
+     - Exit code 0 = success
+     - Non-zero exit code = error occurred
+     - All errors include actionable suggestions
+     - Check stderr for error messages
+
+  6. BEST PRACTICES:
+     - Use --dry-run (-n) to preview actions before execution
+     - Use --verbose (-v) to see detailed step-by-step output
+     - Combine flags: -nvp for verbose dry-run installation
+     - All file paths are validated before operations
+     - Safe to run in automated environments
+
+ERROR HANDLING:
+  - Missing project: 'Project path does not exist'
+  - Missing Cargo.toml: 'Cargo.toml not found in project'
+  - Binary not built: 'Source binary not found' (suggests running cargo build)
+  - Permission errors: Reports specific file/directory issues
+
+SECURITY:
+  - Operates only in user-owned directories
+  - No privilege escalation required
+  - Validates all paths to prevent traversal attacks
+  - Safe to run in automated environments

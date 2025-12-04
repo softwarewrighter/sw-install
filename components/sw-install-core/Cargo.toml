@@ -1,0 +1,10 @@
+[package]
+name = "sw-install-core"
+version = "0.1.0"
+edition = "2024"
+authors = ["Michael A Wright"]
+license = "MIT"
+description = "Core types for sw-install"
+
+[dependencies]
+thiserror = "1.0"

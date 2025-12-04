@@ -5,140 +5,162 @@
 ### Overview
 sw-install is a command-line tool that installs compiled Rust binaries from local Cargo projects into a user-specific installation directory.
 
-### High-Level Architecture
+### Multi-Component Architecture
+
+The project is organized as a multi-component structure with 7 independent crates, each with its own Cargo.toml and target directory. This follows sw-standards for cognitive load management (Miller's Law).
 
 ```
-┌─────────────────────────────────────────────────────┐
-│                   CLI Interface                      │
-│              (clap argument parser)                  │
-└────────────────┬────────────────────────────────────┘
-                 │
-                 v
-┌─────────────────────────────────────────────────────┐
-│               Configuration Layer                    │
-│  - Parse arguments                                   │
-│  - Build InstallConfig                               │
-└────────────────┬────────────────────────────────────┘
-                 │
-                 v
-┌─────────────────────────────────────────────────────┐
-│              Validation Layer                        │
-│  - Verify project path exists                        │
-│  - Verify Cargo.toml exists                          │
-│  - Verify binary exists in target/                   │
-└────────────────┬────────────────────────────────────┘
-                 │
-                 v
-┌─────────────────────────────────────────────────────┐
-│              Installation Layer                      │
-│  - Create destination directory                      │
-│  - Copy binary                                       │
-│  - Set executable permissions                        │
-└─────────────────────────────────────────────────────┘
+sw-install/
+├── components/
+│   ├── sw-install-core/        # Core types: config, output, errors, utilities
+│   ├── sw-install-workspace/   # Cargo workspace utilities
+│   ├── sw-install-validation/  # Project validation and binary detection
+│   ├── sw-install-installer/   # Install and uninstall operations
+│   ├── sw-install-manage/      # Setup operations
+│   ├── sw-install-list/        # List installed binaries
+│   └── sw-install-cli/         # CLI binary (main entry point)
+├── scripts/
+│   └── build.sh                # Builds all components in dependency order
+└── docs/
 ```
 
-### Component Design
+### Component Dependency Graph
 
-#### CLI Interface (main.rs)
-- Entry point for the application
-- Uses clap crate for argument parsing
-- Delegates to InstallConfig for business logic
+```
+                    sw-install-cli
+                    /     |     \     \
+                   /      |      \     \
+                  v       v       v     v
+        sw-install-   sw-install-  sw-install-  sw-install-
+         validation    installer     manage       list
+              |            |           |            |
+              v            v           v            v
+        sw-install-   sw-install-  sw-install-  sw-install-
+         workspace       core        core         core
+              |
+              v
+        sw-install-core
+```
 
-#### Configuration (config.rs)
-- **InstallConfig** struct: holds all installation parameters
-  - project_path: PathBuf
-  - binary_name: Option<String>
-  - use_debug: bool
-  - verbose: bool
-  - dry_run: bool
+### Component Details
 
-- Methods:
-  - new() - construct from CLI args
-  - destination_dir() - compute ~/.local/softwarewrighter/bin
-  - source_binary_path() - compute target/release/<name> or target/debug/<name>
-  - destination_binary_path() - compute destination file path
+#### sw-install-core (4 modules)
+Core types shared across all components:
+- `config.rs` - InstallConfig struct with path computations
+- `output.rs` - NormalOutput for user feedback
+- `format.rs` - Time formatting utilities (format_time_ago)
+- `lib.rs` - InstallError enum, Result type, re-exports
 
-#### Validation (validator.rs)
-- **Validator** struct: validates installation prerequisites
+#### sw-install-workspace (1 module)
+Cargo workspace utilities:
+- `lib.rs` - find_workspace_binaries, expand_member_paths, extract_binaries_from_member
 
-- Methods:
-  - validate_project_path() - ensure path exists and is directory
-  - validate_cargo_toml() - ensure Cargo.toml exists
-  - validate_source_binary() - ensure compiled binary exists
-  - get_binary_name() - extract binary name from Cargo.toml
+#### sw-install-validation (4 modules)
+Project validation and binary detection:
+- `detect.rs` - Project type detection (Simple, Workspace, MultiComponent)
+- `extract.rs` - Binary name extraction from Cargo.toml
+- `source.rs` - Source binary validation and freshness checking
+- `lib.rs` - Validator struct, ValidationResult
 
-#### Installation (installer.rs)
-- **Installer** struct: performs the installation
+#### sw-install-installer (4 modules)
+Install and uninstall operations:
+- `install.rs` - Installer struct for binary installation
+- `uninstall.rs` - Uninstaller struct for binary removal
+- `paths.rs` - Path utilities for destination directories
+- `lib.rs` - Re-exports
 
-- Methods:
-  - install() - main installation orchestration
-  - create_destination_dir() - mkdir -p equivalent
-  - copy_binary() - copy file from source to destination
-  - set_permissions() - chmod +x on Unix systems
+#### sw-install-manage (3 modules)
+Setup operations:
+- `setup.rs` - Setup struct for first-time configuration
+- `shell.rs` - Shell configuration detection and PATH setup
+- `lib.rs` - Re-exports
 
-#### Uninstallation (uninstaller.rs)
-- **Uninstaller** struct: performs binary removal
+#### sw-install-list (4 modules)
+List installed binaries:
+- `list.rs` - Lister struct for listing binaries
+- `binaries.rs` - Binary collection and directory utilities
+- `sort.rs` - SortOrder enum and parsing
+- `lib.rs` - Re-exports
 
-- Methods:
-  - uninstall() - main uninstallation orchestration
-  - validate_binary_exists() - verify binary is installed
-  - remove_binary() - delete file from installation directory
+#### sw-install-cli (5 modules)
+CLI binary entry point:
+- `main.rs` - Entry point, CLI parsing, dispatch
+- `install.rs` - Install command handler
+- `manage.rs` - Setup, list, uninstall command handlers
+- `version.rs` - Version information display
+- `help.txt` - Extended help text
 
-#### Output (output.rs)
-- **OutputHandler** trait: abstraction for output modes
+### High-Level Data Flow
 
-- Implementations:
-  - NormalOutput - minimal output
-  - VerboseOutput - detailed step-by-step output
-  - DryRunOutput - print actions without executing
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                   CLI Interface (sw-install-cli)                │
+│              (clap argument parser + dispatch)                  │
+└────────────────┬────────────────────────────────────────────────┘
+                 │
+                 v
+┌─────────────────────────────────────────────────────────────────┐
+│               Configuration Layer (sw-install-core)             │
+│  - Parse arguments                                              │
+│  - Build InstallConfig                                          │
+│  - Create NormalOutput                                          │
+└────────────────┬────────────────────────────────────────────────┘
+                 │
+                 v
+┌─────────────────────────────────────────────────────────────────┐
+│            Validation Layer (sw-install-validation)             │
+│  - Detect project type (Simple/Workspace/MultiComponent)        │
+│  - Extract binary name from Cargo.toml                          │
+│  - Verify source binary exists and is fresh                     │
+└────────────────┬────────────────────────────────────────────────┘
+                 │
+                 v
+┌─────────────────────────────────────────────────────────────────┐
+│            Installation Layer (sw-install-installer)            │
+│  - Create destination directory                                 │
+│  - Copy binary                                                  │
+│  - Set executable permissions                                   │
+└─────────────────────────────────────────────────────────────────┘
+```
 
-### Data Flow
+### Project Type Detection
 
-1. User invokes CLI: `sw-install -p ../ask -v`
-2. Clap parses arguments into Args struct
-3. InstallConfig built from Args
-4. Validator checks:
-   - Project path exists
-   - Cargo.toml exists at project_path/Cargo.toml
-   - Binary exists at project_path/target/release/<name>
-5. Installer performs installation:
-   - Create ~/.local/softwarewrighter/bin/ if needed
-   - Copy binary to destination
-   - Set executable bit
-6. Output handler prints results
+The validator automatically detects three project structures:
+
+1. **Simple Project** - Standard Cargo project with root Cargo.toml and package section
+2. **Workspace Project** - Cargo workspace with members array, auto-detects binaries
+3. **Multi-Component** - No root Cargo.toml, scans components/ directory for workspace crates
 
 ### Error Handling
-- Use Result<T, InstallError> throughout
+- Use `Result<T, InstallError>` throughout
 - InstallError enum covers all error cases:
-  - ProjectNotFound
-  - CargoTomlNotFound
-  - BinaryNotFound
-  - IoError(std::io::Error)
-  - PermissionError
+  - ProjectNotFound, NotADirectory
+  - CargoTomlNotFound, CargoTomlParse
+  - BinaryNameNotFound, BinaryNotFound, BinaryOutdated
+  - BinaryNotInstalled, InstallDirNotFound
+  - InvalidBinaryName, HomeNotFound
+  - NoOperationSpecified, Io
 
-- Errors bubble up to main() for user-friendly display
+### sw-standards Compliance
+
+The codebase follows sw-checklist standards:
+- Functions per module: 4 or fewer (warning threshold)
+- Modules per crate: 4 or fewer (warning threshold)
+- Lines per function: 25 or fewer (warning threshold)
+- Components: Independent crates with own Cargo.toml
+
+Current status: **45 checks passed, 0 failed, 0 code quality warnings**
 
 ### Dependencies
-- **clap**: CLI argument parsing with derive macros
-- **toml**: Parse Cargo.toml to extract binary name
-- **anyhow**: Enhanced error handling
-- **std::fs**: File system operations
-- **std::path**: Path manipulation
 
-### Testing Strategy
-- **Unit tests**: Test each component in isolation
-  - Config path computations
-  - Validator logic with mock filesystems
-  - Installer operations with temp directories
+**Runtime:**
+- clap - CLI argument parsing with derive macros
+- toml - Parse Cargo.toml to extract binary name
+- thiserror - Error handling
 
-- **Integration tests**: Test full workflows
-  - tests/integration_test.rs
-  - Create temporary Cargo projects
-  - Verify end-to-end installation
-
-- **Property-based tests**: (future)
-  - Valid path transformations
-  - Permission preservation
+**Dev:**
+- tempfile - Temporary directories for tests
+- serial_test - Test isolation
 
 ### Platform Considerations
 - **Target platform**: Unix-like systems (macOS, Linux)
