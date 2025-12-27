@@ -5,6 +5,6 @@ set -e
 
 cd "$(dirname "$0")/.."
 
-cargo build --release
+cargo build --release --manifest-path components/sw-install-cli/Cargo.toml
 
-echo "Build complete: target/release/sw-install"
+echo "Build complete: components/sw-install-cli/target/release/sw-install"

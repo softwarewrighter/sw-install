@@ -26,7 +26,7 @@ pub fn run_list(
     let sort_order = match sort_order_str.parse::<SortOrder>() {
         Ok(order) => order,
         Err(e) => {
-            eprintln!("Error: {}", e);
+            eprintln!("Error: {e}");
             process::exit(1);
         }
     };

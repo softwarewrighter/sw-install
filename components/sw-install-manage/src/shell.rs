@@ -6,11 +6,17 @@ use std::path::{Path, PathBuf};
 use sw_install_core::{NormalOutput, Result};
 
 pub fn find_shell_config(home: &Path) -> PathBuf {
-    [".zshrc", ".bashrc", ".bash_profile", ".profile"]
+    let shell = std::env::var("SHELL").unwrap_or_default();
+    let preferred: &[&str] = if shell.ends_with("zsh") {
+        &[".zshrc", ".zprofile"]
+    } else {
+        &[".bashrc", ".bash_profile", ".profile"]
+    };
+    preferred
         .iter()
         .map(|f| home.join(f))
         .find(|p| p.exists())
-        .unwrap_or_else(|| home.join(".bashrc"))
+        .unwrap_or_else(|| home.join(preferred[0]))
 }
 
 #[rustfmt::skip]

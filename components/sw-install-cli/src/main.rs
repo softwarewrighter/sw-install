@@ -60,7 +60,7 @@ fn main() {
     }
     let result = dispatch(&args);
     if let Err(e) = result {
-        eprintln!("Error: {}", e);
+        eprintln!("Error: {e}");
         process::exit(1);
     }
 }

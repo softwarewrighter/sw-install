@@ -35,8 +35,7 @@ fn parse_build_type(build_type: &str) -> bool {
         "release" => false,
         _ => {
             eprintln!(
-                "Error: Invalid build type '{}'. Must be 'release' or 'debug'",
-                build_type
+                "Error: Invalid build type '{build_type}'. Must be 'release' or 'debug'"
             );
             process::exit(1);
         }
