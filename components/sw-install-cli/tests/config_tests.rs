@@ -29,8 +29,16 @@ fn test_new_config() {
 
 #[test]
 fn test_destination_dir() {
-    let config =
-        InstallConfig::new(PathBuf::from("/test"), None, vec![], false, false, false, false, None);
+    let config = InstallConfig::new(
+        PathBuf::from("/test"),
+        None,
+        vec![],
+        false,
+        false,
+        false,
+        false,
+        None,
+    );
 
     let dest = config.destination_dir().unwrap();
     assert!(

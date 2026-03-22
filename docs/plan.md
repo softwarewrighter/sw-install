@@ -66,9 +66,9 @@ Refactored from single-crate to multi-component structure to meet sw-checklist r
 - [x] Create sw-install-list component (list binaries)
 - [x] Create sw-install-cli component (CLI binary)
 - [x] Create scripts/build.sh for multi-component builds
-- [x] Reduce all modules to ≤4 functions
-- [x] Reduce all crates to ≤4 modules
-- [x] Reduce all functions to ≤25 lines
+- [x] Reduce all modules to <=4 functions
+- [x] Reduce all crates to <=4 modules
+- [x] Reduce all functions to <=25 lines
 - [x] Pass sw-checklist with 0 code quality warnings
 
 ### Current Status

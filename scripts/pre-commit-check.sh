@@ -44,7 +44,9 @@ echo "  ✓ Build successful"
 echo ""
 
 echo "[4/6] Running tests..."
-cargo test --manifest-path "$COMPONENTS_DIR/sw-install-cli/Cargo.toml"
+for comp in "${COMPONENTS[@]}"; do
+    cargo test --manifest-path "$COMPONENTS_DIR/$comp/Cargo.toml"
+done
 echo "  ✓ All tests passed"
 echo ""
 

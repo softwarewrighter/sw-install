@@ -18,13 +18,13 @@ Multi-component structure with 7 independent crates:
 
 ```
 components/
-├── sw-install-core/        # Config, output, errors, format
-├── sw-install-workspace/   # Workspace utilities
-├── sw-install-validation/  # Project validation
-├── sw-install-installer/   # Install/uninstall
-├── sw-install-manage/      # Setup operations
-├── sw-install-list/        # List binaries
-└── sw-install-cli/         # CLI binary
+|---- sw-install-core/        # Config, output, errors, format
+|---- sw-install-workspace/   # Workspace utilities
+|---- sw-install-validation/  # Project validation
+|---- sw-install-installer/   # Install/uninstall
+|---- sw-install-manage/      # Setup operations
+|---- sw-install-list/        # List binaries
++---- sw-install-cli/         # CLI binary
 ```
 
 ### sw-checklist Results
@@ -39,9 +39,9 @@ The only warning is "Binary Freshness" (expected - binary newer than installed).
 
 | Metric | Target | Actual |
 |--------|--------|--------|
-| Functions per module | ≤4 | Pass |
-| Modules per crate | ≤4 | Pass |
-| Lines per function | ≤25 | Pass |
+| Functions per module | <=4 | Pass |
+| Modules per crate | <=4 | Pass |
+| Lines per function | <=25 | Pass |
 | Clippy warnings | 0 | 0 |
 | Format issues | 0 | 0 |
 

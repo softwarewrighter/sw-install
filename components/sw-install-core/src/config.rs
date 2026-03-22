@@ -7,28 +7,35 @@ use std::path::PathBuf;
 #[derive(Debug, Clone)]
 pub struct InstallConfig {
     pub project_path: PathBuf,
-    pub binary_name: Option<String>,
+    pub rename: Option<String>,
+    pub bin_filter: Vec<String>,
     pub use_debug: bool,
     pub verbose: bool,
     pub dry_run: bool,
+    pub build: bool,
     pub test_dir: Option<PathBuf>,
 }
 
 impl InstallConfig {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         project_path: PathBuf,
-        binary_name: Option<String>,
+        rename: Option<String>,
+        bin_filter: Vec<String>,
         use_debug: bool,
         verbose: bool,
         dry_run: bool,
+        build: bool,
         test_dir: Option<PathBuf>,
     ) -> Self {
         Self {
             project_path,
-            binary_name,
+            rename,
+            bin_filter,
             use_debug,
             verbose,
             dry_run,
+            build,
             test_dir,
         }
     }

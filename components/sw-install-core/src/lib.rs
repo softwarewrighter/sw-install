@@ -27,6 +27,15 @@ pub enum InstallError {
     #[error("Binary name not found in Cargo.toml")]
     BinaryNameNotFound,
 
+    #[error("Binary not found in workspace: {0}")]
+    BinaryNotInWorkspace(String),
+
+    #[error("--rename requires exactly one binary, but found {0}")]
+    RenameMultipleBinaries(usize),
+
+    #[error("Build failed")]
+    BuildFailed,
+
     #[error(
         "Source binary not found: {0}\nHint: Run 'cargo build --release' in the project directory"
     )]

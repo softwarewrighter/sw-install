@@ -61,11 +61,7 @@ impl<'a> Installer<'a> {
 
     fn copy_and_set_permissions(&self, dest_dir: &Path) -> Result<PathBuf> {
         self.output.info("[2/3] Copying binary...");
-        let final_name = self
-            .config
-            .binary_name
-            .as_deref()
-            .unwrap_or(&self.binary_name);
+        let final_name = self.config.rename.as_deref().unwrap_or(&self.binary_name);
         let dest_binary = dest_dir.join(final_name);
         if !self.config.dry_run {
             fs::copy(&self.source_binary_path, &dest_binary)?;

@@ -12,8 +12,7 @@ use sw_install_core::{InstallConfig, InstallError, NormalOutput, Result};
 
 #[derive(Debug)]
 pub struct ValidationResult {
-    pub binary_name: String,
-    pub source_binary_path: PathBuf,
+    pub binaries: Vec<(String, PathBuf)>,
 }
 
 #[derive(Debug)]
@@ -38,16 +37,27 @@ impl<'a> Validator<'a> {
         self.validate_path()?;
         self.output.info("[2/4] Detecting project structure...");
         let project_type = detect::detect_project_type(self)?;
-        self.output.info("[3/4] Extracting binary name...");
-        let binary_name = extract::extract_binary_name(self, &project_type)?;
-        self.output.info(&format!("Binary name: {}", binary_name));
-        self.output.info("[4/4] Verifying source binary exists...");
-        let source_binary_path = source::validate_source_binary(self, &binary_name, &project_type)?;
+        self.output.info("[3/4] Extracting binary names...");
+        let names = extract::extract_binary_names(self, &project_type)?;
+        let filtered = self.apply_bin_filter(names)?;
+        self.output
+            .info(&format!("Binaries: {}", filtered.join(", ")));
+        self.output.info("[4/4] Verifying source binaries exist...");
+        let binaries = source::validate_source_binaries(self, &filtered, &project_type)?;
         self.output.success("Validation complete");
-        Ok(ValidationResult {
-            binary_name,
-            source_binary_path,
-        })
+        Ok(ValidationResult { binaries })
+    }
+
+    fn apply_bin_filter(&self, names: Vec<String>) -> Result<Vec<String>> {
+        if self.config.bin_filter.is_empty() {
+            return Ok(names);
+        }
+        for name in &self.config.bin_filter {
+            if !names.contains(name) {
+                return Err(InstallError::BinaryNotInWorkspace(name.clone()));
+            }
+        }
+        Ok(self.config.bin_filter.clone())
     }
 
     fn validate_path(&self) -> Result<()> {

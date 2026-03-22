@@ -11,17 +11,17 @@ The project is organized as a multi-component structure with 7 independent crate
 
 ```
 sw-install/
-├── components/
-│   ├── sw-install-core/        # Core types: config, output, errors, utilities
-│   ├── sw-install-workspace/   # Cargo workspace utilities
-│   ├── sw-install-validation/  # Project validation and binary detection
-│   ├── sw-install-installer/   # Install and uninstall operations
-│   ├── sw-install-manage/      # Setup operations
-│   ├── sw-install-list/        # List installed binaries
-│   └── sw-install-cli/         # CLI binary (main entry point)
-├── scripts/
-│   └── build.sh                # Builds all components in dependency order
-└── docs/
+|---- components/
+|   |---- sw-install-core/        # Core types: config, output, errors, utilities
+|   |---- sw-install-workspace/   # Cargo workspace utilities
+|   |---- sw-install-validation/  # Project validation and binary detection
+|   |---- sw-install-installer/   # Install and uninstall operations
+|   |---- sw-install-manage/      # Setup operations
+|   |---- sw-install-list/        # List installed binaries
+|   +---- sw-install-cli/         # CLI binary (main entry point)
+|---- scripts/
+|   +---- build.sh                # Builds all components in dependency order
++---- docs/
 ```
 
 ### Component Dependency Graph
@@ -93,34 +93,34 @@ CLI binary entry point:
 ### High-Level Data Flow
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                   CLI Interface (sw-install-cli)                │
-│              (clap argument parser + dispatch)                  │
-└────────────────┬────────────────────────────────────────────────┘
-                 │
++-----------------------------------------------------------------+
+|                   CLI Interface (sw-install-cli)                |
+|              (clap argument parser + dispatch)                  |
++------------------+------------------------------------------------+
+                 |
                  v
-┌─────────────────────────────────────────────────────────────────┐
-│               Configuration Layer (sw-install-core)             │
-│  - Parse arguments                                              │
-│  - Build InstallConfig                                          │
-│  - Create NormalOutput                                          │
-└────────────────┬────────────────────────────────────────────────┘
-                 │
++-----------------------------------------------------------------+
+|               Configuration Layer (sw-install-core)             |
+|  - Parse arguments                                              |
+|  - Build InstallConfig                                          |
+|  - Create NormalOutput                                          |
++------------------+------------------------------------------------+
+                 |
                  v
-┌─────────────────────────────────────────────────────────────────┐
-│            Validation Layer (sw-install-validation)             │
-│  - Detect project type (Simple/Workspace/MultiComponent)        │
-│  - Extract binary name from Cargo.toml                          │
-│  - Verify source binary exists and is fresh                     │
-└────────────────┬────────────────────────────────────────────────┘
-                 │
++-----------------------------------------------------------------+
+|            Validation Layer (sw-install-validation)             |
+|  - Detect project type (Simple/Workspace/MultiComponent)        |
+|  - Extract binary name from Cargo.toml                          |
+|  - Verify source binary exists and is fresh                     |
++------------------+------------------------------------------------+
+                 |
                  v
-┌─────────────────────────────────────────────────────────────────┐
-│            Installation Layer (sw-install-installer)            │
-│  - Create destination directory                                 │
-│  - Copy binary                                                  │
-│  - Set executable permissions                                   │
-└─────────────────────────────────────────────────────────────────┘
++-----------------------------------------------------------------+
+|            Installation Layer (sw-install-installer)            |
+|  - Create destination directory                                 |
+|  - Copy binary                                                  |
+|  - Set executable permissions                                   |
++-------------------------------------------------------------------+
 ```
 
 ### Project Type Detection

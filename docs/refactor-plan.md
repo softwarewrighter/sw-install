@@ -10,18 +10,18 @@
 ### Current Structure
 ```
 src/
-├── main.rs         (6 functions, 353 lines)
-├── lib.rs          (re-exports only)
-├── config.rs       (14 functions - FAIL)
-├── error.rs        (6 functions - WARN)
-├── output.rs       (22 functions - FAIL)
-├── validator.rs    (12 functions - FAIL)
-├── installer.rs    (10 functions - FAIL)
-├── uninstaller.rs  (10 functions - FAIL)
-├── lister.rs       (27 functions - FAIL)
-├── setup.rs        (14 functions - FAIL)
+|---- main.rs         (6 functions, 353 lines)
+|---- lib.rs          (re-exports only)
+|---- config.rs       (14 functions - FAIL)
+|---- error.rs        (6 functions - WARN)
+|---- output.rs       (22 functions - FAIL)
+|---- validator.rs    (12 functions - FAIL)
+|---- installer.rs    (10 functions - FAIL)
+|---- uninstaller.rs  (10 functions - FAIL)
+|---- lister.rs       (27 functions - FAIL)
+|---- setup.rs        (14 functions - FAIL)
 tests/
-└── validator_tests.rs (6 tests)
++---- validator_tests.rs (6 tests)
 ```
 
 **Module Count**: 10 modules (max 7) - FAIL
@@ -45,32 +45,32 @@ Based on sw-checklist and alltalk-client-rs patterns:
 
 ```
 src/
-├── main.rs              (CLI parsing + orchestration, ~6 functions)
-├── lib.rs               (re-exports only, 0 functions)
-├── error.rs             (error types, ~2 functions)
-├── output.rs            (output handlers, ~4 functions)
-├── config.rs            (InstallConfig, ~5 functions)
-├── validation/
-│   ├── mod.rs           (re-exports, 0 functions)
-│   ├── validator.rs     (Validator struct + validate(), ~4 functions)
-│   ├── project_type.rs  (ProjectType detection, ~3 functions)
-│   └── workspace.rs     (workspace binary scanning, ~3 functions)
-├── operations/
-│   ├── mod.rs           (re-exports, 0 functions)
-│   ├── installer.rs     (Installer, ~4 functions)
-│   ├── uninstaller.rs   (Uninstaller, ~4 functions)
-│   ├── lister.rs        (Lister, ~5 functions)
-│   └── setup.rs         (Setup, ~5 functions)
+|---- main.rs              (CLI parsing + orchestration, ~6 functions)
+|---- lib.rs               (re-exports only, 0 functions)
+|---- error.rs             (error types, ~2 functions)
+|---- output.rs            (output handlers, ~4 functions)
+|---- config.rs            (InstallConfig, ~5 functions)
+|---- validation/
+|   |---- mod.rs           (re-exports, 0 functions)
+|   |---- validator.rs     (Validator struct + validate(), ~4 functions)
+|   |---- project_type.rs  (ProjectType detection, ~3 functions)
+|   +---- workspace.rs     (workspace binary scanning, ~3 functions)
+|---- operations/
+|   |---- mod.rs           (re-exports, 0 functions)
+|   |---- installer.rs     (Installer, ~4 functions)
+|   |---- uninstaller.rs   (Uninstaller, ~4 functions)
+|   |---- lister.rs        (Lister, ~5 functions)
+|   +---- setup.rs         (Setup, ~5 functions)
 tests/
-├── config_tests.rs
-├── error_tests.rs
-├── output_tests.rs
-├── validator_tests.rs
-├── installer_tests.rs
-├── uninstaller_tests.rs
-├── lister_tests.rs
-├── setup_tests.rs
-└── test_helpers.rs      (shared test utilities)
+|---- config_tests.rs
+|---- error_tests.rs
+|---- output_tests.rs
+|---- validator_tests.rs
+|---- installer_tests.rs
+|---- uninstaller_tests.rs
+|---- lister_tests.rs
+|---- setup_tests.rs
++---- test_helpers.rs      (shared test utilities)
 ```
 
 **Module Count**: 7 (main.rs not counted as module in lib)
@@ -89,13 +89,13 @@ tests/
 4. Verify all tests pass
 
 **Expected Results**:
-- config.rs: 14 → 5 functions
-- output.rs: 22 → 4 functions
-- validator.rs: 12 → 12 functions (already moved)
-- installer.rs: 10 → 5 functions
-- uninstaller.rs: 10 → 6 functions
-- lister.rs: 27 → 7 functions
-- setup.rs: 14 → 7 functions
+- config.rs: 14 -> 5 functions
+- output.rs: 22 -> 4 functions
+- validator.rs: 12 -> 12 functions (already moved)
+- installer.rs: 10 -> 5 functions
+- uninstaller.rs: 10 -> 6 functions
+- lister.rs: 27 -> 7 functions
+- setup.rs: 14 -> 7 functions
 
 ### Phase 2: Split Validator into Submodules
 **Goal**: Reduce validator.rs function count and improve organization
@@ -117,7 +117,7 @@ tests/
 1. Create `src/operations/` directory
 2. Move installer.rs, uninstaller.rs, lister.rs, setup.rs
 3. Create `mod.rs` with re-exports
-4. Split lister.rs if still over limit (format_time_ago → time_utils.rs)
+4. Split lister.rs if still over limit (format_time_ago -> time_utils.rs)
 
 **Expected Results**:
 - operations/installer.rs: ~4 functions
@@ -157,15 +157,15 @@ pub fn create_multi_component_project() -> TempDir { ... }
 ### Test File Naming Convention
 ```
 tests/
-├── test_helpers.rs         # Shared utilities (pub mod)
-├── config_tests.rs         # Tests for config.rs
-├── error_tests.rs          # Tests for error.rs
-├── output_tests.rs         # Tests for output.rs
-├── validator_tests.rs      # Tests for validation/
-├── installer_tests.rs      # Tests for operations/installer.rs
-├── uninstaller_tests.rs    # Tests for operations/uninstaller.rs
-├── lister_tests.rs         # Tests for operations/lister.rs
-└── setup_tests.rs          # Tests for operations/setup.rs
+|---- test_helpers.rs         # Shared utilities (pub mod)
+|---- config_tests.rs         # Tests for config.rs
+|---- error_tests.rs          # Tests for error.rs
+|---- output_tests.rs         # Tests for output.rs
+|---- validator_tests.rs      # Tests for validation/
+|---- installer_tests.rs      # Tests for operations/installer.rs
+|---- uninstaller_tests.rs    # Tests for operations/uninstaller.rs
+|---- lister_tests.rs         # Tests for operations/lister.rs
++---- setup_tests.rs          # Tests for operations/setup.rs
 ```
 
 ---
@@ -178,8 +178,8 @@ After refactoring, sw-checklist should show:
 - Rust Edition: 2024
 - All File LOC: < 500 lines
 - All Function LOC: < 50 lines
-- All Module Function Counts: ≤ 7 functions
-- Crate Module Count: ≤ 7 modules
+- All Module Function Counts: <= 7 functions
+- Crate Module Count: <= 7 modules
 
 ### Warnings Acceptable
 - Function LOC > 25 lines (warnings OK)

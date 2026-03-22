@@ -8,65 +8,65 @@ The project is organized as 7 independent components, each with its own Cargo.to
 
 ```
 sw-install/
-├── components/
-│   ├── sw-install-core/
-│   │   ├── Cargo.toml
-│   │   └── src/
-│   │       ├── lib.rs        # InstallError, Result, re-exports
-│   │       ├── config.rs     # InstallConfig struct
-│   │       ├── output.rs     # NormalOutput struct
-│   │       └── format.rs     # format_time_ago utility
-│   │
-│   ├── sw-install-workspace/
-│   │   ├── Cargo.toml
-│   │   └── src/
-│   │       └── lib.rs        # Workspace binary discovery
-│   │
-│   ├── sw-install-validation/
-│   │   ├── Cargo.toml
-│   │   └── src/
-│   │       ├── lib.rs        # Validator, ValidationResult
-│   │       ├── detect.rs     # Project type detection
-│   │       ├── extract.rs    # Binary name extraction
-│   │       └── source.rs     # Source binary validation
-│   │
-│   ├── sw-install-installer/
-│   │   ├── Cargo.toml
-│   │   └── src/
-│   │       ├── lib.rs        # Re-exports
-│   │       ├── install.rs    # Installer struct
-│   │       ├── uninstall.rs  # Uninstaller struct
-│   │       └── paths.rs      # Path utilities
-│   │
-│   ├── sw-install-manage/
-│   │   ├── Cargo.toml
-│   │   └── src/
-│   │       ├── lib.rs        # Re-exports
-│   │       ├── setup.rs      # Setup struct
-│   │       └── shell.rs      # Shell configuration
-│   │
-│   ├── sw-install-list/
-│   │   ├── Cargo.toml
-│   │   └── src/
-│   │       ├── lib.rs        # Re-exports
-│   │       ├── list.rs       # Lister struct
-│   │       ├── binaries.rs   # Binary collection
-│   │       └── sort.rs       # SortOrder enum
-│   │
-│   └── sw-install-cli/
-│       ├── Cargo.toml
-│       ├── build.rs          # Build-time metadata
-│       └── src/
-│           ├── main.rs       # Entry point, CLI parsing
-│           ├── install.rs    # Install command
-│           ├── manage.rs     # Setup, list, uninstall commands
-│           ├── version.rs    # Version display
-│           └── help.txt      # Extended help text
-│
-├── scripts/
-│   └── build.sh              # Build all components
-│
-└── docs/                     # Documentation
+|---- components/
+|   |---- sw-install-core/
+|   |   |---- Cargo.toml
+|   |   +---- src/
+|   |       |---- lib.rs        # InstallError, Result, re-exports
+|   |       |---- config.rs     # InstallConfig struct
+|   |       |---- output.rs     # NormalOutput struct
+|   |       +---- format.rs     # format_time_ago utility
+|   |
+|   |---- sw-install-workspace/
+|   |   |---- Cargo.toml
+|   |   +---- src/
+|   |       +---- lib.rs        # Workspace binary discovery
+|   |
+|   |---- sw-install-validation/
+|   |   |---- Cargo.toml
+|   |   +---- src/
+|   |       |---- lib.rs        # Validator, ValidationResult
+|   |       |---- detect.rs     # Project type detection
+|   |       |---- extract.rs    # Binary name extraction
+|   |       +---- source.rs     # Source binary validation
+|   |
+|   |---- sw-install-installer/
+|   |   |---- Cargo.toml
+|   |   +---- src/
+|   |       |---- lib.rs        # Re-exports
+|   |       |---- install.rs    # Installer struct
+|   |       |---- uninstall.rs  # Uninstaller struct
+|   |       +---- paths.rs      # Path utilities
+|   |
+|   |---- sw-install-manage/
+|   |   |---- Cargo.toml
+|   |   +---- src/
+|   |       |---- lib.rs        # Re-exports
+|   |       |---- setup.rs      # Setup struct
+|   |       +---- shell.rs      # Shell configuration
+|   |
+|   |---- sw-install-list/
+|   |   |---- Cargo.toml
+|   |   +---- src/
+|   |       |---- lib.rs        # Re-exports
+|   |       |---- list.rs       # Lister struct
+|   |       |---- binaries.rs   # Binary collection
+|   |       +---- sort.rs       # SortOrder enum
+|   |
+|   +---- sw-install-cli/
+|       |---- Cargo.toml
+|       |---- build.rs          # Build-time metadata
+|       +---- src/
+|           |---- main.rs       # Entry point, CLI parsing
+|           |---- install.rs    # Install command
+|           |---- manage.rs     # Setup, list, uninstall commands
+|           |---- version.rs    # Version display
+|           +---- help.txt      # Extended help text
+|
+|---- scripts/
+|   +---- build.sh              # Build all components
+|
++---- docs/                     # Documentation
 ```
 
 ### API Design
@@ -259,34 +259,34 @@ struct Args {
 
 ```
 main()
-  ├─> Parse CLI arguments (clap)
-  ├─> Dispatch based on operation:
-  │
-  ├─> Install operation (-p):
-  │     ├─> Create InstallConfig
-  │     ├─> Create NormalOutput
-  │     ├─> Create Validator
-  │     ├─> validator.validate()
-  │     │     ├─> Detect project type
-  │     │     ├─> Extract binary name
-  │     │     └─> Validate source binary
-  │     ├─> Create Installer
-  │     └─> installer.install()
-  │           ├─> Create destination directory
-  │           ├─> Copy binary
-  │           └─> Set permissions
-  │
-  ├─> List operation (-l):
-  │     ├─> Create Lister
-  │     └─> lister.list()
-  │
-  ├─> Uninstall operation (-u):
-  │     ├─> Create Uninstaller
-  │     └─> uninstaller.uninstall()
-  │
-  └─> Setup operation (--setup-install-dir):
-        ├─> Create Setup
-        └─> setup.setup()
+  |---> Parse CLI arguments (clap)
+  |---> Dispatch based on operation:
+  |
+  |---> Install operation (-p):
+  |     |---> Create InstallConfig
+  |     |---> Create NormalOutput
+  |     |---> Create Validator
+  |     |---> validator.validate()
+  |     |     |---> Detect project type
+  |     |     |---> Extract binary name
+  |     |     +---> Validate source binary
+  |     |---> Create Installer
+  |     +---> installer.install()
+  |           |---> Create destination directory
+  |           |---> Copy binary
+  |           +---> Set permissions
+  |
+  |---> List operation (-l):
+  |     |---> Create Lister
+  |     +---> lister.list()
+  |
+  |---> Uninstall operation (-u):
+  |     |---> Create Uninstaller
+  |     +---> uninstaller.uninstall()
+  |
+  +---> Setup operation (--setup-install-dir):
+        |---> Create Setup
+        +---> setup.setup()
 ```
 
 ### Build System
@@ -330,10 +330,10 @@ The codebase is organized to meet sw-checklist requirements:
 
 | Metric | Threshold | Status |
 |--------|-----------|--------|
-| Functions per module | ≤4 (warn), ≤7 (fail) | Pass |
-| Modules per crate | ≤4 (warn), ≤7 (fail) | Pass |
-| Lines per function | ≤25 (warn), ≤50 (fail) | Pass |
-| Lines per file | ≤350 (warn), ≤500 (fail) | Pass |
+| Functions per module | <=4 (warn), <=7 (fail) | Pass |
+| Modules per crate | <=4 (warn), <=7 (fail) | Pass |
+| Lines per function | <=25 (warn), <=50 (fail) | Pass |
+| Lines per file | <=350 (warn), <=500 (fail) | Pass |
 
 **Current: 45 checks passed, 0 failed, 0 code quality warnings**
 

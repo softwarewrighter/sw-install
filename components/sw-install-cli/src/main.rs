@@ -8,7 +8,7 @@ mod version;
 use clap::Parser;
 use std::path::PathBuf;
 use std::process;
-use sw_install_core::InstallError;
+use sw_install_core::{InstallConfig, InstallError};
 
 const EXTENDED_HELP: &str = include_str!("help.txt");
 
@@ -21,6 +21,8 @@ struct Args {
     project: Option<PathBuf>,
     #[arg(short, long, value_name = "NAME", requires = "project")]
     rename: Option<String>,
+    #[arg(long, value_name = "NAME", requires = "project", action = clap::ArgAction::Append)]
+    bin: Vec<String>,
     #[arg(
         long,
         value_name = "TYPE",
@@ -28,6 +30,8 @@ struct Args {
         requires = "project"
     )]
     r#type: String,
+    #[arg(short, long, requires = "project")]
+    build: bool,
     #[arg(short, long, value_name = "NAME", conflicts_with = "project")]
     uninstall: Option<String>,
     #[arg(short = 'l', long, conflicts_with_all = ["project", "uninstall"])]
@@ -78,14 +82,18 @@ fn dispatch(args: &Args) -> Result<(), InstallError> {
             args.test_dir.clone(),
         )
     } else if let Some(ref project_path) = args.project {
-        install::run(
+        let use_debug = install::parse_build_type(&args.r#type);
+        let config = InstallConfig::new(
             project_path.clone(),
             args.rename.clone(),
-            &args.r#type,
+            args.bin.clone(),
+            use_debug,
             args.verbose,
             args.dry_run,
+            args.build,
             args.test_dir.clone(),
-        )
+        );
+        install::run(config)
     } else {
         Err(InstallError::NoOperationSpecified)
     }

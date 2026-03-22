@@ -33,7 +33,7 @@ sw-checklist is a validation tool that enforces coding standards designed to pro
 
 ### Why These Constraints?
 
-The constraints are based on **Miller's Law (7±2 rule)** - the cognitive limit on the number of items a person can hold in working memory. By keeping modules small and focused:
+The constraints are based on **Miller's Law (7+/-2 rule)** - the cognitive limit on the number of items a person can hold in working memory. By keeping modules small and focused:
 
 - Code is easier to understand
 - Functions fit on a single screen
@@ -51,12 +51,12 @@ Each module, struct, and function should have one clear purpose:
 
 ```
 GOOD:
-  parse.rs    → parsing only
-  validate.rs → validation only
-  format.rs   → serialization only
+  parse.rs    -> parsing only
+  validate.rs -> validation only
+  format.rs   -> serialization only
 
 BAD:
-  utils.rs    → mixed parsing, validation, formatting, helpers
+  utils.rs    -> mixed parsing, validation, formatting, helpers
 ```
 
 ### 2. Separation of Tests from Implementation
@@ -125,13 +125,13 @@ Lower layers should never depend on higher layers:
 
 ```
 config.rs (lowest - no internal deps)
-    ↓
+    v
 error.rs (depends on nothing)
-    ↓
+    v
 validator.rs (depends on config, error)
-    ↓
+    v
 installer.rs (depends on config, error, validator)
-    ↓
+    v
 main.rs (depends on everything)
 ```
 
@@ -142,13 +142,13 @@ When faced with constraint violations (too many functions, too many modules), al
 **The Refactoring Direction Principle:**
 
 ```
-Functions → Modules → Crates → Components
-     ↑          ↑         ↑
+Functions -> Modules -> Crates -> Components
+     ^          ^         ^
    SPLIT      SPLIT     SPLIT
    (good)     (good)    (good)
 
-Functions ← Modules ← Crates ← Components
-     ↓          ↓         ↓
+Functions <- Modules <- Crates <- Components
+     v          v         v
    MERGE      MERGE     MERGE
    (avoid)    (avoid)   (avoid)
 ```
@@ -211,10 +211,10 @@ impl Validator {
 
 **When You Think You Need to Merge, Instead:**
 
-1. **Too many modules?** → Create a subdirectory with mod.rs, move related modules into it
-2. **Too many functions in a module?** → Split into submodules by responsibility
-3. **Too many lines in a file?** → Extract types, helpers, or tests into separate files
-4. **lib.rs getting complex?** → Keep it as pure re-exports, move logic to modules
+1. **Too many modules?** -> Create a subdirectory with mod.rs, move related modules into it
+2. **Too many functions in a module?** -> Split into submodules by responsibility
+3. **Too many lines in a file?** -> Extract types, helpers, or tests into separate files
+4. **lib.rs getting complex?** -> Keep it as pure re-exports, move logic to modules
 
 **The Constraint Escalation Path:**
 
@@ -234,32 +234,32 @@ Never consider merging until you've exhausted all splitting options.
 
 ### Flat vs. Hierarchical Structure
 
-**Flat Structure** (≤7 modules):
+**Flat Structure** (<=7 modules):
 ```
 src/
-├── lib.rs
-├── config.rs
-├── error.rs
-├── validator.rs
-├── installer.rs
-└── main.rs
+|---- lib.rs
+|---- config.rs
+|---- error.rs
+|---- validator.rs
+|---- installer.rs
++---- main.rs
 ```
 
 **Hierarchical Structure** (>7 logical modules):
 ```
 src/
-├── lib.rs
-├── config.rs
-├── error.rs
-├── validation/
-│   ├── mod.rs
-│   ├── validator.rs
-│   └── project_type.rs
-├── operations/
-│   ├── mod.rs
-│   ├── installer.rs
-│   └── lister.rs
-└── main.rs
+|---- lib.rs
+|---- config.rs
+|---- error.rs
+|---- validation/
+|   |---- mod.rs
+|   |---- validator.rs
+|   +---- project_type.rs
+|---- operations/
+|   |---- mod.rs
+|   |---- installer.rs
+|   +---- lister.rs
++---- main.rs
 ```
 
 ### When to Use Submodules
@@ -299,11 +299,11 @@ sw-checklist counts `.rs` files as modules. To minimize count:
 
 ```
 tests/
-├── test_helpers.rs      # Shared utilities (optional)
-├── config_tests.rs      # Tests for src/config.rs
-├── validator_tests.rs   # Tests for src/validator.rs
-├── installer_tests.rs   # Tests for src/installer.rs
-└── integration_tests.rs # End-to-end tests (optional)
+|---- test_helpers.rs      # Shared utilities (optional)
+|---- config_tests.rs      # Tests for src/config.rs
+|---- validator_tests.rs   # Tests for src/validator.rs
+|---- installer_tests.rs   # Tests for src/installer.rs
++---- integration_tests.rs # End-to-end tests (optional)
 ```
 
 ### Shared Test Helpers
@@ -349,9 +349,9 @@ fn test_validate_succeeds() {
 
 ```
 tests/
-├── {module}_tests.rs    # Unit/integration tests for a module
-├── test_helpers.rs      # Shared utilities
-└── common/mod.rs        # Alternative for shared code
+|---- {module}_tests.rs    # Unit/integration tests for a module
+|---- test_helpers.rs      # Shared utilities
++---- common/mod.rs        # Alternative for shared code
 ```
 
 ---
@@ -362,7 +362,7 @@ tests/
 
 | Threshold | Status | Action |
 |-----------|--------|--------|
-| ≤25 lines | OK | No action needed |
+| <=25 lines | OK | No action needed |
 | 26-50 lines | WARNING | Consider splitting |
 | >50 lines | FAIL | Must split |
 
@@ -457,7 +457,7 @@ fn find_binaries(dir: &Path) -> Vec<String> {
 
 | Threshold | Status | Action |
 |-----------|--------|--------|
-| ≤350 lines | OK | No action needed |
+| <=350 lines | OK | No action needed |
 | 351-500 lines | WARNING | Consider splitting |
 | >500 lines | FAIL | Must split |
 
@@ -476,11 +476,11 @@ fn find_binaries(dir: &Path) -> Vec<String> {
 
 ```
 docs/
-├── status.md        # Current project status
-├── plan.md          # Development roadmap
-├── architecture.md  # System design (optional but recommended)
-├── design.md        # Detailed design decisions (optional)
-└── learnings.md     # Lessons learned (optional)
+|---- status.md        # Current project status
+|---- plan.md          # Development roadmap
+|---- architecture.md  # System design (optional but recommended)
+|---- design.md        # Detailed design decisions (optional)
++---- learnings.md     # Lessons learned (optional)
 ```
 
 ### Module-Level Documentation
@@ -656,7 +656,7 @@ pub fn find_binaries(path: &Path) -> Result<Vec<String>> { ... }
 
 **Before:**
 ```rust
-// src/output.rs (22 functions - 4 structs × 4 methods + factory + trait)
+// src/output.rs (22 functions - 4 structs x 4 methods + factory + trait)
 pub trait OutputHandler { ... }
 pub struct NormalOutput;
 pub struct VerboseOutput;
@@ -711,28 +711,28 @@ pub fn create_output_handler(verbose: bool, dry_run: bool) -> Output {
 
 ### Module Checklist
 
-- [ ] ≤7 functions per module (including impl methods)
-- [ ] ≤500 lines per file
+- [ ] <=7 functions per module (including impl methods)
+- [ ] <=500 lines per file
 - [ ] No tests in source files (move to `tests/`)
 - [ ] `lib.rs` contains only re-exports
 
 ### Function Checklist
 
-- [ ] ≤50 lines per function
+- [ ] <=50 lines per function
 - [ ] Single responsibility
 - [ ] Early returns for error cases
 - [ ] Pure functions where possible
 
 ### Crate Checklist
 
-- [ ] ≤7 top-level modules
+- [ ] <=7 top-level modules
 - [ ] Rust 2024 edition
 - [ ] Clear dependency hierarchy
 - [ ] Comprehensive documentation
 
 ### CLI Checklist (for CLI tools)
 
-- [ ] `--help` longer than `-h`
+- [ ] +--help` longer than `-h`
 - [ ] Version info includes: Copyright, License, Repository
 - [ ] Version info includes: Build Host, Commit, Timestamp
 - [ ] AI Agent Instructions section in extended help

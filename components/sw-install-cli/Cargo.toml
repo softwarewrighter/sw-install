@@ -7,6 +7,10 @@ license = "MIT"
 description = "Install softwarewrighter binaries to local PATH"
 repository = "https://github.com/softwarewrighter/sw-install"
 
+[lib]
+name = "sw_install"
+path = "src/lib.rs"
+
 [[bin]]
 name = "sw-install"
 path = "src/main.rs"

@@ -13,14 +13,32 @@ fn new_config(
     rename: Option<String>,
     test_dir: std::path::PathBuf,
 ) -> InstallConfig {
-    InstallConfig::new(project_path, rename, vec![], false, false, false, false, Some(test_dir))
+    InstallConfig::new(
+        project_path,
+        rename,
+        vec![],
+        false,
+        false,
+        false,
+        false,
+        Some(test_dir),
+    )
 }
 
 fn new_config_dry_run(
     project_path: std::path::PathBuf,
     test_dir: std::path::PathBuf,
 ) -> InstallConfig {
-    InstallConfig::new(project_path, None, vec![], false, false, true, false, Some(test_dir))
+    InstallConfig::new(
+        project_path,
+        None,
+        vec![],
+        false,
+        false,
+        true,
+        false,
+        Some(test_dir),
+    )
 }
 
 #[test]
@@ -117,10 +135,7 @@ fn test_dry_run_doesnt_modify_filesystem() {
     let source_path = target_dir.join("testapp");
     fs::write(&source_path, "fake binary").unwrap();
 
-    let config = new_config_dry_run(
-        temp_project.path().to_path_buf(),
-        test_bin_dir.clone(),
-    );
+    let config = new_config_dry_run(temp_project.path().to_path_buf(), test_bin_dir.clone());
     let output = NormalOutput::default();
     let installer = Installer::new(&config, "testapp".to_string(), source_path, &output);
 

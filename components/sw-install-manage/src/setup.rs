@@ -35,7 +35,7 @@ impl<'a> Setup<'a> {
         Ok(())
     }
 
-    fn create_install_dir(&self) -> Result<PathBuf> {
+    pub(crate) fn create_install_dir(&self) -> Result<PathBuf> {
         let install_dir = self.test_dir.clone().map_or_else(
             || {
                 Ok(
@@ -51,7 +51,7 @@ impl<'a> Setup<'a> {
         Ok(install_dir)
     }
 
-    fn configure_shell(&self, install_dir: &Path) -> Result<PathBuf> {
+    pub(crate) fn configure_shell(&self, install_dir: &Path) -> Result<PathBuf> {
         let home = std::env::var("HOME").map_err(|_| InstallError::HomeNotFound)?;
         let shell_config = find_shell_config(Path::new(&home));
         self.output
@@ -63,5 +63,66 @@ impl<'a> Setup<'a> {
             return Ok(shell_config);
         }
         write_path_config(&shell_config, install_dir, self.dry_run, self.output)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serial_test::serial;
+    use sw_install_core::NormalOutput;
+    use tempfile::TempDir;
+
+    #[test]
+    fn test_setup_with_test_dir() {
+        let test_dir = TempDir::new().unwrap();
+        let test_path = test_dir.path().join("custom-bin");
+        let output = NormalOutput::default();
+        let setup = Setup::new(false, Some(test_path.clone()), &output);
+        let result = setup.create_install_dir();
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), test_path);
+        assert!(test_path.exists());
+    }
+
+    #[test]
+    fn test_setup_dry_run() {
+        let test_dir = TempDir::new().unwrap();
+        let test_path = test_dir.path().join("custom-bin");
+        let output = NormalOutput::default();
+        let setup = Setup::new(true, Some(test_path.clone()), &output);
+        let result = setup.create_install_dir();
+        assert!(result.is_ok());
+        assert!(!test_path.exists());
+    }
+
+    #[test]
+    #[serial]
+    fn test_setup_creates_directory() {
+        let temp_home = TempDir::new().unwrap();
+        unsafe { std::env::set_var("HOME", temp_home.path()) };
+        let output = NormalOutput::default();
+        let setup = Setup::new(false, None, &output);
+        let result = setup.create_install_dir();
+        assert!(result.is_ok());
+        let install_dir = result.unwrap();
+        assert!(install_dir.exists());
+        assert!(
+            install_dir
+                .to_string_lossy()
+                .ends_with(".local/softwarewrighter/bin")
+        );
+    }
+
+    #[test]
+    #[serial]
+    fn test_full_setup_with_test_dir() {
+        let test_dir = TempDir::new().unwrap();
+        let install_dir = test_dir.path().join("bin");
+        let output = NormalOutput::default();
+        let setup = Setup::new(false, Some(install_dir.clone()), &output);
+        let result = setup.setup();
+        assert!(result.is_ok());
+        assert!(install_dir.exists());
     }
 }

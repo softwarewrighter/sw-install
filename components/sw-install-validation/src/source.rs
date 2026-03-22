@@ -7,17 +7,21 @@ use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 use sw_install_core::{InstallError, Result};
 
-pub(crate) fn validate_source_binary(
+pub(crate) fn validate_source_binaries(
     validator: &Validator,
-    binary_name: &str,
+    binary_names: &[String],
     project_type: &ProjectType,
-) -> Result<PathBuf> {
-    let (source_path, source_root) = get_source_paths(validator, binary_name, project_type);
-    if !source_path.exists() {
-        return Err(InstallError::BinaryNotFound(source_path.to_path_buf()));
+) -> Result<Vec<(String, PathBuf)>> {
+    let mut results = Vec::new();
+    for name in binary_names {
+        let (source_path, source_root) = get_source_paths(validator, name, project_type);
+        if !source_path.exists() {
+            return Err(InstallError::BinaryNotFound(source_path.to_path_buf()));
+        }
+        check_freshness(&source_path, &source_root)?;
+        results.push((name.clone(), source_path));
     }
-    check_freshness(&source_path, &source_root)?;
-    Ok(source_path)
+    Ok(results)
 }
 
 fn get_source_paths(

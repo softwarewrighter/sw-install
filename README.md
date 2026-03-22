@@ -133,17 +133,17 @@ sw-install uses a multi-component architecture with 7 independent crates:
 
 ```
 sw-install/
-├── components/
-│   ├── sw-install-core/        # Config, output, errors, utilities
-│   ├── sw-install-workspace/   # Cargo workspace utilities
-│   ├── sw-install-validation/  # Project validation
-│   ├── sw-install-installer/   # Install/uninstall operations
-│   ├── sw-install-manage/      # Setup operations
-│   ├── sw-install-list/        # List binaries
-│   └── sw-install-cli/         # CLI binary
-├── scripts/
-│   └── build.sh                # Build all components
-└── docs/                       # Documentation
+|---- components/
+|   |---- sw-install-core/        # Config, output, errors, utilities
+|   |---- sw-install-workspace/   # Cargo workspace utilities
+|   |---- sw-install-validation/  # Project validation
+|   |---- sw-install-installer/   # Install/uninstall operations
+|   |---- sw-install-manage/      # Setup operations
+|   |---- sw-install-list/        # List binaries
+|   +---- sw-install-cli/         # CLI binary
+|---- scripts/
+|   +---- build.sh                # Build all components
++---- docs/                       # Documentation
 ```
 
 ## Development
@@ -234,8 +234,8 @@ See [LICENSE](LICENSE) for details.
 
 This tool is designed for automated binary installation in development workflows:
 
-- Use `--dry-run (-n)` to preview actions before execution
-- Use `--verbose (-v)` to see detailed step-by-step output
+- Use +--dry-run (-n)` to preview actions before execution
+- Use +--verbose (-v)` to see detailed step-by-step output
 - Check exit codes: 0 = success, non-zero = error
 - All file paths are validated before operations
 - Errors include actionable suggestions

@@ -215,11 +215,7 @@ fn test_workspace_installs_all_binaries() {
 fn test_bin_filter_selects_specific_binary() {
     let temp_dir = TempDir::new().unwrap();
 
-    create_workspace_cargo_toml(
-        temp_dir.path(),
-        r#"["crates/tool-a", "crates/tool-b"]"#,
-    )
-    .unwrap();
+    create_workspace_cargo_toml(temp_dir.path(), r#"["crates/tool-a", "crates/tool-b"]"#).unwrap();
 
     let tool_a_dir = temp_dir.path().join("crates").join("tool-a");
     create_bin_crate(&tool_a_dir, "tool-a").unwrap();
@@ -232,10 +228,7 @@ fn test_bin_filter_selects_specific_binary() {
     fs::write(target_dir.join("tool-a"), "fake binary a").unwrap();
     fs::write(target_dir.join("tool-b"), "fake binary b").unwrap();
 
-    let config = new_config_with_filter(
-        temp_dir.path().to_path_buf(),
-        vec!["tool-b".to_string()],
-    );
+    let config = new_config_with_filter(temp_dir.path().to_path_buf(), vec!["tool-b".to_string()]);
     let output = NormalOutput::default();
     let validator = Validator::new(&config, &output);
 

@@ -27,6 +27,23 @@ EXAMPLES:
   Install a release binary:
     sw-install -p ~/projects/ask
 
+  Install all binaries from a multi-binary workspace:
+    sw-install -p ~/projects/my-workspace
+    # Installs all detected binaries
+
+  Install specific binary from a workspace:
+    sw-install -p ~/projects/my-workspace --bin my-tool
+
+  Install multiple specific binaries:
+    sw-install -p ~/projects/my-workspace --bin tool-a --bin tool-b
+
+  Install a specific binary with a different name:
+    sw-install -p ~/projects/my-workspace --bin my-tool -r my-tool-dev
+
+  Build and install:
+    sw-install -p ~/projects/ask --build
+    sw-install -p ~/projects/ask --build --type debug
+
   Install with a different name:
     sw-install -p ~/projects/ask -r ask-dev
 
@@ -53,7 +70,7 @@ EXAMPLES:
 PREREQUISITES:
   - Run 'sw-install --setup-install-dir' for first-time setup
   - Project must have a Cargo.toml file
-  - Binary must be compiled (run 'cargo build --release' or 'cargo build')
+  - Binary must be compiled (run 'cargo build --release' or use --build flag)
 
 WORKSPACE SUPPORT:
   sw-install automatically detects three project structures:
@@ -62,8 +79,13 @@ WORKSPACE SUPPORT:
   2. Workspace project: Cargo.toml with [workspace] and members
   3. Multi-component project: No root Cargo.toml, components/<name>/Cargo.toml
 
-  For workspaces with multiple binary crates, it will list all found binaries
-  and install the first one (use --rename to specify a different name).
+  For workspaces with multiple binary crates, all binaries are installed by
+  default. Use --bin to select specific binaries. Use --rename with a single
+  binary (either a single-binary project or --bin selecting one).
+
+BUILD SUPPORT:
+  Use --build (-b) to run 'cargo build' before installing. Combines with
+  --type to select release (default) or debug builds.
 
 AI CODING AGENT INSTRUCTIONS:
   This tool is designed for automated binary installation in development
@@ -73,6 +95,8 @@ AI CODING AGENT INSTRUCTIONS:
      - Run: sw-install -p /path/to/project
      - For debug builds: sw-install -p /path/to/project --type debug
      - For renamed binaries: sw-install -p /path/to/project -r new-name
+     - For specific binaries: sw-install -p /path/to/project --bin name
+     - Build and install: sw-install -p /path/to/project --build
      - Preview first: sw-install -p /path/to/project --dry-run -v
 
   2. LISTING BINARIES:
