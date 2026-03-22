@@ -8,10 +8,12 @@ use sw_install_validation::Validator;
 
 pub fn run(config: InstallConfig) -> Result<(), InstallError> {
     let output = NormalOutput::new(config.verbose, config.dry_run);
+    let validator = Validator::new(&config, &output);
     if config.build {
-        run_cargo_build(&config, &output)?;
+        let build_dir = validator.detect_build_dir()?;
+        run_cargo_build(&build_dir, &config, &output)?;
     }
-    let result = Validator::new(&config, &output).validate()?;
+    let result = validator.validate()?;
     validate_rename(&config, result.binaries.len())?;
     for (name, source_path) in &result.binaries {
         Installer::new(&config, name.clone(), source_path.clone(), &output).install()?;
@@ -26,14 +28,21 @@ fn validate_rename(config: &InstallConfig, count: usize) -> Result<(), InstallEr
     Ok(())
 }
 
-fn run_cargo_build(config: &InstallConfig, output: &NormalOutput) -> Result<(), InstallError> {
+fn run_cargo_build(
+    build_dir: &std::path::Path,
+    config: &InstallConfig,
+    output: &NormalOutput,
+) -> Result<(), InstallError> {
     let build_type = if config.use_debug { "debug" } else { "release" };
-    output.info(&format!("Running cargo build --{build_type}..."));
+    output.info(&format!(
+        "Running cargo build --{build_type} in {}...",
+        build_dir.display()
+    ));
     if config.dry_run {
         return Ok(());
     }
     let mut cmd = process::Command::new("cargo");
-    cmd.arg("build").current_dir(&config.project_path);
+    cmd.arg("build").current_dir(build_dir);
     if !config.use_debug {
         cmd.arg("--release");
     }
