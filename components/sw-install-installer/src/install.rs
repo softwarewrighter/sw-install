@@ -64,6 +64,9 @@ impl<'a> Installer<'a> {
         let final_name = self.config.rename.as_deref().unwrap_or(&self.binary_name);
         let dest_binary = dest_dir.join(final_name);
         if !self.config.dry_run {
+            // Remove existing binary first to avoid "text file busy" on Linux
+            // when overwriting a running executable
+            let _ = fs::remove_file(&dest_binary);
             fs::copy(&self.source_binary_path, &dest_binary)?;
         }
         self.output
